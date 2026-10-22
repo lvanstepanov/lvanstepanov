@@ -19,6 +19,9 @@
 
   --b1: #2a78d6; --b2: #eb6834; --b3: #1baf7a; --b4: #eda100; --b5: #e87ba4; --b6: #008300;
   --on-b1: #FFFFFF;
+  --map-w2: #986118; --map-w2-ink: #FFFFFF; --map-w1: #D6AC60; --map-w1-ink: #0E1A2B;
+  --map-n: #E3E5E0; --map-n-ink: #0E1A2B; --map-c1: #94B6EA; --map-c1-ink: #0E1A2B;
+  --map-c2: #2C6DC8; --map-c2-ink: #FFFFFF; --map-na: #FBFBF8; --map-na-line: #D5D9D2; --map-na-ink: #5F6A7A;
 
   --f-ui: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-num: 'Unbounded', 'Onest', system-ui, sans-serif;
@@ -33,7 +36,7 @@
     --bg: #0E1A2B; --surface: #142236; --text: #EEF1F5; --text-2: #C3CCD8; --muted: #8C99AA;
     --line: #2A3648; --line-strong: #C3CCD8; --accent: #D9A64E; --accent-text: #D9A64E;
     --data: #4B8FE0; --data-text: #8DB8F0; --data-soft: #3A5170; --wash: #1B2E48; --warn-wash: #2A2416; --grid: #1D2B3F;
-    --b1: #3987e5; --b2: #d95926; --b3: #199e70; --b4: #c98500; --b5: #d55181; --b6: #008300; --on-b1: #0E1A2B;
+    --b1: #3987e5; --b2: #d95926; --b3: #199e70; --b4: #c98500; --b5: #d55181; --b6: #008300; --on-b1: #0E1A2B; --map-w2: #CC9844; --map-w2-ink: #0E1A2B; --map-w1: #755A29; --map-w1-ink: #EEF1F5; --map-n: #2A3646; --map-n-ink: #EEF1F5; --map-c1: #30609A; --map-c1-ink: #EEF1F5; --map-c2: #6AA3EA; --map-c2-ink: #0E1A2B; --map-na: #142236; --map-na-line: #2A3648; --map-na-ink: #8C99AA;
   }
 }
 :root[data-theme='dark'] {
@@ -41,7 +44,7 @@
   --bg: #0E1A2B; --surface: #142236; --text: #EEF1F5; --text-2: #C3CCD8; --muted: #8C99AA;
   --line: #2A3648; --line-strong: #C3CCD8; --accent: #D9A64E; --accent-text: #D9A64E;
   --data: #4B8FE0; --data-text: #8DB8F0; --data-soft: #3A5170; --wash: #1B2E48; --warn-wash: #2A2416; --grid: #1D2B3F;
-  --b1: #3987e5; --b2: #d95926; --b3: #199e70; --b4: #c98500; --b5: #d55181; --b6: #008300; --on-b1: #0E1A2B;
+  --b1: #3987e5; --b2: #d95926; --b3: #199e70; --b4: #c98500; --b5: #d55181; --b6: #008300; --on-b1: #0E1A2B; --map-w2: #CC9844; --map-w2-ink: #0E1A2B; --map-w1: #755A29; --map-w1-ink: #EEF1F5; --map-n: #2A3646; --map-n-ink: #EEF1F5; --map-c1: #30609A; --map-c1-ink: #EEF1F5; --map-c2: #6AA3EA; --map-c2-ink: #0E1A2B; --map-na: #142236; --map-na-line: #2A3648; --map-na-ink: #8C99AA;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

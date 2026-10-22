@@ -84,3 +84,6 @@
   .money-v { font-size: 20px; }
   .variants { margin-top: 40px; }
 }
+
+.map-link { color: var(--data-text); text-decoration: none; justify-self: start; }
+.map-link:hover { text-decoration: underline; }

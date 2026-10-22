@@ -4,6 +4,7 @@ import {
   type CompRow, type Guide as GuideOut, type GuideInput, type Mode, type SegKey,
 } from '../lib/compass';
 import { NB, PP, dmy, mln, nf, pf, plural, sg, yrs } from '../lib/format';
+import { guideMemory, parseHash, replaceHash } from '../lib/nav';
 import { Instrument } from '../components/Instrument';
 import { BUY_VAR, Block, PageHead, SrcLink, useTip, useTween, useWidth } from '../components/ui';
 import './guide.css';
@@ -13,13 +14,21 @@ const parse = (s: string) => parseFloat(s.replace(',', '.'));
 const ASOF_RU = '19.10.2026';
 
 export function Guide() {
-  const [mode, setMode] = useState<Mode>('repeat');
-  const [iss, setIss] = useState('BI Development Ltd.');
-  const [seg, setSeg] = useState<SegKey>('mfo');
-  const [ten, setTen] = useState(2);
-  const [tenStr, setTenStr] = useState('2');
-  const [vol, setVol] = useState(2);
-  const [volStr, setVolStr] = useState('2');
+  // Inputs survive a trip to the map; «#guide?iss=…» opens a given issuer.
+  const [init] = useState(() => {
+    const q = parseHash().params.get('iss');
+    if (q && ISSUERS.includes(q)) { guideMemory.mode = 'repeat'; guideMemory.iss = q; replaceHash('guide', {}); }
+    if (!ISSUERS.includes(guideMemory.iss)) guideMemory.iss = 'BI Development Ltd.';
+    return { ...guideMemory };
+  });
+  const [mode, setMode] = useState<Mode>(init.mode);
+  const [iss, setIss] = useState(init.iss);
+  const [seg, setSeg] = useState<SegKey>(init.seg);
+  const [ten, setTen] = useState(init.ten);
+  const [tenStr, setTenStr] = useState(String(init.ten).replace('.', ','));
+  const [vol, setVol] = useState(init.vol);
+  const [volStr, setVolStr] = useState(String(init.vol).replace('.', ','));
+  useEffect(() => { Object.assign(guideMemory, { mode, iss, seg, ten, vol }); }, [mode, iss, seg, ten, vol]);
 
   const inp: GuideInput = { mode, iss, seg, ten };
   const out = useMemo(() => guide(inp), [mode, iss, seg, ten]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,6 +66,7 @@ export function Guide() {
                 {ISSUERS.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
               <p className="hint">{hint}</p>
+              <a className="hint map-link" href={'#map?open=' + encodeURIComponent(iss)}>Этот эмитент на карте рынка →</a>
             </div>
           ) : (
             <div className="fld">

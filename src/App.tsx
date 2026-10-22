@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { TipProvider } from './components/ui';
 import { Guide } from './screens/Guide';
+import { MapScreen } from './screens/Map';
+import { parseHash } from './lib/nav';
 import { Market } from './screens/Market';
 import { Spreads } from './screens/Spreads';
 import { Deals } from './screens/Deals';
@@ -9,17 +11,18 @@ import { Check } from './screens/Check';
 import { Full } from './screens/Full';
 
 const VIEWS = [
-  { id: 'guide', label: 'Ориентир купона', C: Guide },
+  { id: 'guide', label: 'Ориентир', C: Guide },
+  { id: 'map', label: 'Карта рынка', C: MapScreen },
   { id: 'market', label: 'Рынок сейчас', C: Market },
-  { id: 'spreads', label: 'Спреды к ГЦБ', C: Spreads },
-  { id: 'deals', label: 'База размещений', C: Deals },
+  { id: 'spreads', label: 'Спреды', C: Spreads },
+  { id: 'deals', label: 'База', C: Deals },
   { id: 'buyers', label: 'Покупатели', C: Buyers },
-  { id: 'check', label: 'Проверка на истории', C: Check },
+  { id: 'check', label: 'Проверка', C: Check },
   { id: 'full', label: 'Полная версия', C: Full },
 ] as const;
 
 const fromHash = () => {
-  const h = location.hash.slice(1);
+  const h = parseHash().view;
   return VIEWS.some((v) => v.id === h) ? h : 'guide';
 };
 

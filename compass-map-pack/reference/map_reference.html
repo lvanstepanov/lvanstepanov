@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карта размещений · KASE Compass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F3F4F0;--surface:#FBFBF8;--text:#0E1A2B;--text-2:#3D4A5C;--muted:#5F6A7A;
+  --line:#DEE1DA;--line-strong:#0E1A2B;--accent:#B07A24;--accent-text:#8A5A12;
+  --data:#2A78D6;--data-text:#1F5FAE;--data-soft:#BCCBDE;--wash:#E3ECF7;
+  /* карта: расходящаяся шкала, латунь = хуже для эмитента, синий = лучше */
+  --m-w2:#986118;--m-w1:#D6AC60;--m-n:#E3E5E0;--m-c1:#94B6EA;--m-c2:#2C6DC8;
+  --m-w2-ink:#FFFFFF;--m-w1-ink:#0E1A2B;--m-n-ink:#0E1A2B;--m-c1-ink:#0E1A2B;--m-c2-ink:#FFFFFF;
+  --m-na:#FBFBF8;--m-na-line:#D5D9D2;--m-na-ink:#5F6A7A;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1A2B;--surface:#142236;--text:#EEF1F5;--text-2:#C3CCD8;--muted:#8C99AA;
+    --line:#2A3648;--line-strong:#C3CCD8;--accent:#D9A64E;--accent-text:#D9A64E;
+    --data:#4B8FE0;--data-text:#8DB8F0;--data-soft:#3A5170;--wash:#1B2E48;
+    --m-w2:#CC9844;--m-w1:#755A29;--m-n:#2A3646;--m-c1:#30609A;--m-c2:#6AA3EA;
+    --m-w2-ink:#0E1A2B;--m-w1-ink:#EEF1F5;--m-n-ink:#EEF1F5;--m-c1-ink:#EEF1F5;--m-c2-ink:#0E1A2B;
+    --m-na:#142236;--m-na-line:#2A3648;--m-na-ink:#8C99AA;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1A2B;--surface:#142236;--text:#EEF1F5;--text-2:#C3CCD8;--muted:#8C99AA;
+  --line:#2A3648;--line-strong:#C3CCD8;--accent:#D9A64E;--accent-text:#D9A64E;
+  --data:#4B8FE0;--data-text:#8DB8F0;--data-soft:#3A5170;--wash:#1B2E48;
+  --m-w2:#CC9844;--m-w1:#755A29;--m-n:#2A3646;--m-c1:#30609A;--m-c2:#6AA3EA;
+  --m-w2-ink:#0E1A2B;--m-w1-ink:#EEF1F5;--m-n-ink:#EEF1F5;--m-c1-ink:#EEF1F5;--m-c2-ink:#0E1A2B;
+  --m-na:#142236;--m-na-line:#2A3648;--m-na-ink:#8C99AA;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text-2);font:400 16px/1.5 "Onest",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:var(--data-text)}
+button{font:inherit;color:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+@media (max-width:640px){.wrap{padding:0 16px}}
+
+/* шапка (упрощённая копия сайта) */
+.top{height:64px;border-bottom:1px solid var(--line);background:var(--bg)}
+.top .wrap{height:100%;display:flex;align-items:center;gap:32px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex:none}
+.brand svg{width:32px;height:32px}
+.brand b{font:600 18px/1 "Unbounded",sans-serif;letter-spacing:-.01em}
+.brand b span{color:var(--accent)}
+.tabs{display:flex;gap:24px;overflow-x:auto;scrollbar-width:none;height:100%;align-items:stretch}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{display:flex;align-items:center;white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a[aria-current]{color:var(--text);border-bottom-color:var(--accent)}
+
+/* экран */
+.screen{padding:48px 0 32px;border-top:2px solid var(--line-strong);margin-top:40px}
+.eyebrow{margin:0 0 16px;font:500 12px/1.3 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;max-width:920px;font:600 40px/1.12 "Onest",sans-serif;letter-spacing:-.015em;color:var(--text)}
+.lead{margin:16px 0 0;max-width:760px;font-size:18px;line-height:1.5;color:var(--text-2)}
+@media (max-width:640px){h1{font-size:28px}.lead{font-size:16px}.screen{padding-top:32px;margin-top:24px}}
+
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;margin-top:32px}
+.ctl{display:flex;align-items:center;gap:12px}
+.ctl-l{font:500 12px/1 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--surface)}
+.seg button{border:0;background:transparent;border-radius:6px;padding:7px 14px;font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.seg button:focus-visible,.btn-ghost:focus-visible,.btn:focus-visible,.segrow button:focus-visible,.t th button:focus-visible{outline:2px solid var(--data-text);outline-offset:2px}
+.btn-ghost{margin-left:auto;border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:500;cursor:pointer;min-height:40px;color:var(--text)}
+.btn-ghost[aria-pressed="true"]{background:var(--surface)}
+@media (max-width:640px){.btn-ghost{margin-left:0}}
+
+.legend{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 28px;margin-top:24px}
+.legend-t{flex:1 0 100%;margin:0;font-size:14px;font-weight:600;color:var(--text)}
+.lg-main{display:grid;grid-template-columns:repeat(5,96px);column-gap:2px;row-gap:6px}
+.sw{display:flex;flex-direction:column;gap:6px;min-width:0;background:none;border:0;padding:0;cursor:default;text-align:left}
+.sw i{display:block;height:12px;width:100%;border-radius:2px}
+.sw span{font-size:12px;line-height:1.25;color:var(--text-2);white-space:nowrap}
+.lg-poles{grid-column:1/-1;display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.sw.na{width:96px}
+.sw.na i{background-color:var(--m-na);background-image:repeating-linear-gradient(135deg,var(--m-na-line) 0 1px,transparent 1px 6px);box-shadow:inset 0 0 0 1px var(--m-na-line)}
+.size-note{margin-left:auto;font-size:12px;color:var(--muted);padding-top:18px}
+@media (max-width:640px){.lg-main{grid-template-columns:repeat(5,1fr);width:100%}.sw span{font-size:11px;white-space:normal}.size-note{margin-left:0;padding-top:0}}
+.cap{margin:16px 0 0;max-width:860px;font-size:14px;color:var(--text-2)}
+.how{margin:20px 0 10px;font-size:13px;color:var(--muted)}
+
+/* карта */
+.map{position:relative;width:100%;height:620px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.gh{position:absolute;display:flex;align-items:center;gap:8px;padding:0 2px;height:22px;overflow:hidden;white-space:nowrap;font:500 11px/1 "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:none;border:0;cursor:pointer;text-align:left}
+.gh b{font-weight:500;color:var(--text)}
+.gh.gh-s{height:16px;font-size:10px;letter-spacing:.06em}
+.gh.gh-s span{display:none}
+.gh:hover b,.gh:focus-visible b{text-decoration:underline;text-underline-offset:3px}
+.gh:focus-visible{outline:2px solid var(--data-text);outline-offset:1px}
+.tile{position:absolute;margin:0;padding:8px;border:0;border-radius:2px;overflow:hidden;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;line-height:1.2}
+.ready .tile,.ready .gh{transition:left .45s var(--ease),top .45s var(--ease),width .45s var(--ease),height .45s var(--ease),background-color .25s ease,color .25s ease,opacity .2s ease}
+.tile>*{transition:opacity .15s ease}
+.moving .tile>*{opacity:0}
+.tile:hover,.tile.is-sel{outline:2px solid var(--text);outline-offset:-2px;z-index:3}
+.tile:focus-visible{outline:2px solid var(--text);outline-offset:-2px;box-shadow:inset 0 0 0 4px var(--bg);z-index:4}
+.filtering .tile:not(.hit){opacity:.22}
+.t-n{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-v,.t-m{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.z-xl{padding:14px}
+.z-xl .t-n{font-size:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.z-xl .t-v{margin-top:6px;line-height:1.2}
+.z-xl .t-v .q{font:500 22px/1.2 "Unbounded",sans-serif;letter-spacing:-.01em}
+.z-xl .t-v .u{font-size:14px;font-weight:500}
+.z-xl .t-m{font-size:13px}
+.z-l{padding:10px}
+.z-l .t-n{font-size:15px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.z-l .t-v{font-size:13px;font-weight:500;margin-top:2px}
+.z-s{padding:5px 6px}
+.z-s .t-n{font-size:12px}
+.z-xs{padding:0}
+.b-w2{background:var(--m-w2);color:var(--m-w2-ink)}
+.b-w1{background:var(--m-w1);color:var(--m-w1-ink)}
+.b-n{background:var(--m-n);color:var(--m-n-ink)}
+.b-c1{background:var(--m-c1);color:var(--m-c1-ink)}
+.b-c2{background:var(--m-c2);color:var(--m-c2-ink)}
+.b-na{background-color:var(--m-na);background-image:repeating-linear-gradient(135deg,var(--m-na-line) 0 1px,transparent 1px 7px);color:var(--m-na-ink);box-shadow:inset 0 0 0 1px var(--m-na-line)}
+.tile.more .t-n{font-style:normal}
+
+.segrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-top:16px;font-size:13px;color:var(--muted)}
+.segrow button{border:0;background:none;padding:2px 0;cursor:pointer;color:var(--text-2);font-size:13px;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.segrow button:hover{text-decoration-color:currentColor}
+.note{margin:24px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);max-width:980px}
+
+/* подсказка */
+.tip{position:fixed;z-index:50;pointer-events:none;width:344px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;color:var(--text-2);font-size:13px;line-height:1.4;box-shadow:0 1px 2px rgba(14,26,43,.06),0 8px 24px rgba(14,26,43,.08)}
+.tip[hidden]{display:none}
+.tip h4{margin:0;font-size:15px;font-weight:600;color:var(--text);line-height:1.25}
+.tip .k{margin:2px 0 10px;font:500 11px/1.3 "JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tip dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.tip dt{color:var(--muted)}
+.tip dd{margin:0;color:var(--text)}
+.tip .on dt,.tip .on dd{font-weight:600}
+.tip dl>div{display:contents}
+.tip .f{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+.tip ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.tip li{display:flex;justify-content:space-between;gap:12px}
+.tip li span:last-child{color:var(--text)}
+
+/* панель */
+.scrim{position:fixed;inset:0;background:rgba(14,26,43,.28);z-index:60}
+.scrim[hidden],.drawer[hidden]{display:none}
+.drawer{position:fixed;z-index:61;top:0;right:0;bottom:0;width:600px;max-width:100vw;background:var(--bg);border-left:1px solid var(--line);overflow-y:auto;padding:28px 28px 40px}
+.dr-h{display:flex;align-items:flex-start;gap:16px;padding-bottom:20px;border-bottom:2px solid var(--line-strong)}
+.dr-h>div{flex:1;min-width:0}
+.dr-h .eyebrow{margin-bottom:8px}
+.dr-h h2{margin:0;font:600 28px/1.15 "Onest",sans-serif;color:var(--text)}
+.dr-x{flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:22px;line-height:1;color:var(--text)}
+.dr-x:focus-visible{outline:2px solid var(--data-text);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:0;border-bottom:1px solid var(--line)}
+.kpis div{padding:16px 12px 16px 0;border-bottom:1px solid var(--line)}
+.kpis div:nth-last-child(-n+3){border-bottom:0}
+.kpis span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.kpis b{font:500 18px/1.2 "Onest",sans-serif;color:var(--text)}
+.kpis b.big{font:500 20px/1.2 "Unbounded",sans-serif}
+.dr-act{margin:20px 0 4px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;background:var(--text);color:var(--bg);text-decoration:none;font-weight:600;font-size:15px;border:0;cursor:pointer}
+.dr-note{margin:16px 0 0;font-size:13px;color:var(--muted)}
+.drawer h3{margin:28px 0 8px;font:500 12px/1.3 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.dt{width:100%;border-collapse:collapse;font-size:13px}
+.dt th{font:500 11px/1.2 "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 5px;border-bottom:2px solid var(--line-strong);white-space:nowrap}
+.dt td{padding:10px 5px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--text)}
+.dt th:first-child,.dt td:first-child{padding-left:0}
+.dt th:last-child,.dt td.c-src{padding-right:0;text-align:right}
+.dt .num{text-align:right}
+.dt td.c-sum{display:none}
+.dt .mono{font-family:"JetBrains Mono",monospace;font-size:12px}
+.dt a{text-decoration:none;font-weight:500}
+.dt a:hover{text-decoration:underline}
+.dt-wrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+.iss-list{list-style:none;margin:0;padding:0}
+.iss-list button{display:grid;grid-template-columns:14px 1fr auto;gap:12px;align-items:center;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;text-align:left}
+.iss-list button:hover{background:var(--surface)}
+.iss-list i{width:14px;height:14px;border-radius:2px}
+.iss-list b{font-weight:600;color:var(--text)}
+.iss-list small{color:var(--muted);font-size:13px;text-align:right}
+@media (max-width:640px){
+  .drawer{top:auto;left:0;width:100%;max-height:88vh;border-left:0;border-top:1px solid var(--line);border-radius:12px 12px 0 0;padding:20px 16px 32px}
+  .dr-h h2{font-size:22px}
+  .dt thead{display:none}
+  .dt,.dt tbody{display:block}
+  .dt tr{display:grid;grid-template-columns:1fr auto;column-gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .dt td{display:none;border:0;padding:0;white-space:normal}
+  .dt td.c-sum{display:block;grid-column:1;font-size:14px;line-height:1.45}
+  .dt td.c-sum .mono{color:var(--muted)}
+  .dt td.c-src{display:block;grid-column:2;grid-row:1;align-self:start}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis div:nth-last-child(-n+3){border-bottom:1px solid var(--line)}
+  .kpis div:nth-last-child(-n+2){border-bottom:0}
+}
+
+/* таблица */
+.tv[hidden]{display:none}
+.tv{margin-top:8px;overflow-x:auto}
+.t{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+.t th{padding:0;border-bottom:2px solid var(--line-strong);text-align:left}
+.t th button{width:100%;border:0;background:none;padding:10px 8px;font:500 11px/1.2 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;text-align:inherit;white-space:nowrap}
+.t th.num{text-align:right}
+.t th[aria-sort] button{color:var(--text)}
+.t td{padding:0 8px;height:48px;border-bottom:1px solid var(--line);color:var(--text)}
+.t td.num{text-align:right}
+.t tbody tr{cursor:pointer}
+.t tbody tr:hover{background:var(--surface)}
+.t tbody tr:focus-visible{outline:2px solid var(--data-text);outline-offset:-2px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:baseline}
+.dot.b-na{background-size:auto}
+
+footer{margin-top:48px;border-top:1px solid var(--line)}
+footer p{margin:0;padding:20px 0 40px;font-size:13px;color:var(--muted);max-width:900px}
+@media (prefers-reduced-motion:reduce){.ready .tile,.ready .gh,.tile>*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#guide" aria-label="KASE Compass">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/><circle cx="20" cy="20" r="13.5" fill="none" stroke="var(--line)" stroke-width="1"/><path d="M20 5.5L23.2 20L16.8 20Z" fill="var(--accent)"/><path d="M20 34.5L16.8 20L23.2 20Z" fill="var(--text)"/><circle cx="20" cy="20" r="2.2" fill="var(--surface)" stroke="var(--text)" stroke-width="1.2"/></svg>
+      <b><span>KASE</span> Compass</b>
+    </a>
+    <nav class="tabs" aria-label="Разделы">
+      <a href="#guide">Ориентир</a><a href="#map" aria-current="page">Карта рынка</a><a href="#market">Рынок сейчас</a><a href="#spreads">Спреды</a><a href="#deals">База</a><a href="#buyers">Покупатели</a><a href="#check">Проверка</a><a href="#full">Полная версия</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="screen" id="map-screen" aria-labelledby="t-title">
+    <p class="eyebrow" id="t-eyebrow"></p>
+    <h1 id="t-title"></h1>
+    <p class="lead" id="t-sub"></p>
+
+    <div class="controls">
+      <div class="ctl"><span class="ctl-l" id="l-size">Размер</span>
+        <div class="seg" role="group" aria-labelledby="l-size">
+          <button type="button" data-size="vol" aria-pressed="true">Объём</button><button type="button" data-size="n" aria-pressed="false">Размещения</button>
+        </div>
+      </div>
+      <div class="ctl"><span class="ctl-l" id="l-color">Цвет</span>
+        <div class="seg" role="group" aria-labelledby="l-color">
+          <button type="button" data-color="demand" aria-pressed="true">Спрос</button><button type="button" data-color="price" aria-pressed="false">Цена</button>
+        </div>
+      </div>
+      <button type="button" class="btn-ghost" id="b-table" aria-pressed="false" aria-controls="tv">Показать таблицей</button>
+    </div>
+
+    <div class="legend" id="legend">
+      <p class="legend-t" id="lg-title"></p>
+      <div class="lg-main" id="lg-scale"></div>
+      <button type="button" class="sw na" data-bin="na"><i></i><span>нет данных</span></button>
+      <span class="size-note" id="size-note"></span>
+    </div>
+    <p class="cap" id="t-cap"></p>
+    <p class="how" id="t-how"></p>
+
+    <div class="map" id="map" role="group" aria-label="Карта размещений: одна плитка — один эмитент"></div>
+    <div class="segrow" id="segrow"></div>
+
+    <div class="tv" id="tv" hidden>
+      <table class="t" id="t">
+        <caption class="eyebrow" style="caption-side:top;text-align:left;padding:8px 0 12px">Эмитенты 2026 года · нажмите строку, чтобы открыть сделки</caption>
+        <thead><tr>
+          <th data-k="name"><button type="button">Эмитент</button></th>
+          <th data-k="seg"><button type="button">Тип</button></th>
+          <th class="num" data-k="vol_bn"><button type="button">Привлечено</button></th>
+          <th class="num" data-k="n"><button type="button">Размещений</button></th>
+          <th class="num" data-k="cov_med"><button type="button">Медиана спроса</button></th>
+          <th class="num" data-k="under"><button type="button">С недобором</button></th>
+          <th class="num" data-k="spr_med"><button type="button">Медианный спред</button></th>
+          <th class="num" data-k="spr_delta"><button type="button">К медиане типа</button></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <p class="note" id="t-note"></p>
+  </section>
+</main>
+
+<footer><div class="wrap"><p>KASE Compass — учебный концепт-прототип для кейс-чемпионата KASE. Это не официальный сервис KASE и не инвестиционная рекомендация: все цифры — статистика прошлых размещений.</p></div></footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" hidden></aside>
+
+<script>// https://d3js.org/d3-hierarchy/ v3.1.2 Copyright 2010-2021 Mike Bostock
+!function(n,r){"object"==typeof exports&&"undefined"!=typeof module?r(exports):"function"==typeof define&&define.amd?define(["exports"],r):r((n="undefined"!=typeof globalThis?globalThis:n||self).d3=n.d3||{})}(this,(function(n){"use strict";function r(n,r){return n.parent===r.parent?1:2}function t(n,r){return n+r.x}function e(n,r){return Math.max(n,r.y)}function i(n){var r=0,t=n.children,e=t&&t.length;if(e)for(;--e>=0;)r+=t[e].value;else r=1;n.value=r}function u(n,r){n instanceof Map?(n=[void 0,n],void 0===r&&(r=f)):void 0===r&&(r=o);for(var t,e,i,u,a,l=new h(n),p=[l];t=p.pop();)if((i=r(t.data))&&(a=(i=Array.from(i)).length))for(t.children=i,u=a-1;u>=0;--u)p.push(e=i[u]=new h(i[u])),e.parent=t,e.depth=t.depth+1;return l.eachBefore(c)}function o(n){return n.children}function f(n){return Array.isArray(n)?n[1]:null}function a(n){void 0!==n.data.value&&(n.value=n.data.value),n.data=n.data.data}function c(n){var r=0;do{n.height=r}while((n=n.parent)&&n.height<++r)}function h(n){this.data=n,this.depth=this.height=0,this.parent=null}function l(n){return null==n?null:p(n)}function p(n){if("function"!=typeof n)throw new Error;return n}function d(){return 0}function s(n){return function(){return n}}h.prototype=u.prototype={constructor:h,count:function(){return this.eachAfter(i)},each:function(n,r){let t=-1;for(const e of this)n.call(r,e,++t,this);return this},eachAfter:function(n,r){for(var t,e,i,u=this,o=[u],f=[],a=-1;u=o.pop();)if(f.push(u),t=u.children)for(e=0,i=t.length;e<i;++e)o.push(t[e]);for(;u=f.pop();)n.call(r,u,++a,this);return this},eachBefore:function(n,r){for(var t,e,i=this,u=[i],o=-1;i=u.pop();)if(n.call(r,i,++o,this),t=i.children)for(e=t.length-1;e>=0;--e)u.push(t[e]);return this},find:function(n,r){let t=-1;for(const e of this)if(n.call(r,e,++t,this))return e},sum:function(n){return this.eachAfter((function(r){for(var t=+n(r.data)||0,e=r.children,i=e&&e.length;--i>=0;)t+=e[i].value;r.value=t}))},sort:function(n){return this.eachBefore((function(r){r.children&&r.children.sort(n)}))},path:function(n){for(var r=this,t=function(n,r){if(n===r)return n;var t=n.ancestors(),e=r.ancestors(),i=null;n=t.pop(),r=e.pop();for(;n===r;)i=n,n=t.pop(),r=e.pop();return i}(r,n),e=[r];r!==t;)r=r.parent,e.push(r);for(var i=e.length;n!==t;)e.splice(i,0,n),n=n.parent;return e},ancestors:function(){for(var n=this,r=[n];n=n.parent;)r.push(n);return r},descendants:function(){return Array.from(this)},leaves:function(){var n=[];return this.eachBefore((function(r){r.children||n.push(r)})),n},links:function(){var n=this,r=[];return n.each((function(t){t!==n&&r.push({source:t.parent,target:t})})),r},copy:function(){return u(this).eachBefore(a)},[Symbol.iterator]:function*(){var n,r,t,e,i=this,u=[i];do{for(n=u.reverse(),u=[];i=n.pop();)if(yield i,r=i.children)for(t=0,e=r.length;t<e;++t)u.push(r[t])}while(u.length)}};const v=4294967296;function x(){let n=1;return()=>(n=(1664525*n+1013904223)%v)/v}function y(n,r){for(var t,e,i=0,u=(n=function(n,r){let t,e,i=n.length;for(;i;)e=r()*i--|0,t=n[i],n[i]=n[e],n[e]=t;return n}(Array.from(n),r)).length,o=[];i<u;)t=n[i],e&&w(e,t)?++i:(e=M(o=g(o,t)),i=0);return e}function g(n,r){var t,e;if(_(r,n))return[r];for(t=0;t<n.length;++t)if(m(r,n[t])&&_(z(n[t],r),n))return[n[t],r];for(t=0;t<n.length-1;++t)for(e=t+1;e<n.length;++e)if(m(z(n[t],n[e]),r)&&m(z(n[t],r),n[e])&&m(z(n[e],r),n[t])&&_(B(n[t],n[e],r),n))return[n[t],n[e],r];throw new Error}function m(n,r){var t=n.r-r.r,e=r.x-n.x,i=r.y-n.y;return t<0||t*t<e*e+i*i}function w(n,r){var t=n.r-r.r+1e-9*Math.max(n.r,r.r,1),e=r.x-n.x,i=r.y-n.y;return t>0&&t*t>e*e+i*i}function _(n,r){for(var t=0;t<r.length;++t)if(!w(n,r[t]))return!1;return!0}function M(n){switch(n.length){case 1:return function(n){return{x:n.x,y:n.y,r:n.r}}(n[0]);case 2:return z(n[0],n[1]);case 3:return B(n[0],n[1],n[2])}}function z(n,r){var t=n.x,e=n.y,i=n.r,u=r.x,o=r.y,f=r.r,a=u-t,c=o-e,h=f-i,l=Math.sqrt(a*a+c*c);return{x:(t+u+a/l*h)/2,y:(e+o+c/l*h)/2,r:(l+i+f)/2}}function B(n,r,t){var e=n.x,i=n.y,u=n.r,o=r.x,f=r.y,a=r.r,c=t.x,h=t.y,l=t.r,p=e-o,d=e-c,s=i-f,v=i-h,x=a-u,y=l-u,g=e*e+i*i-u*u,m=g-o*o-f*f+a*a,w=g-c*c-h*h+l*l,_=d*s-p*v,M=(s*w-v*m)/(2*_)-e,z=(v*x-s*y)/_,B=(d*m-p*w)/(2*_)-i,A=(p*y-d*x)/_,b=z*z+A*A-1,q=2*(u+M*z+B*A),E=M*M+B*B-u*u,S=-(Math.abs(b)>1e-6?(q+Math.sqrt(q*q-4*b*E))/(2*b):E/q);return{x:e+M+z*S,y:i+B+A*S,r:S}}function A(n,r,t){var e,i,u,o,f=n.x-r.x,a=n.y-r.y,c=f*f+a*a;c?(i=r.r+t.r,i*=i,o=n.r+t.r,i>(o*=o)?(e=(c+o-i)/(2*c),u=Math.sqrt(Math.max(0,o/c-e*e)),t.x=n.x-e*f-u*a,t.y=n.y-e*a+u*f):(e=(c+i-o)/(2*c),u=Math.sqrt(Math.max(0,i/c-e*e)),t.x=r.x+e*f-u*a,t.y=r.y+e*a+u*f)):(t.x=r.x+t.r,t.y=r.y)}function b(n,r){var t=n.r+r.r-1e-6,e=r.x-n.x,i=r.y-n.y;return t>0&&t*t>e*e+i*i}function q(n){var r=n._,t=n.next._,e=r.r+t.r,i=(r.x*t.r+t.x*r.r)/e,u=(r.y*t.r+t.y*r.r)/e;return i*i+u*u}function Node(n){this._=n,this.next=null,this.previous=null}function E(n,r){if(!(o=(t=n,n="object"==typeof t&&"length"in t?t:Array.from(t)).length))return 0;var t,e,i,u,o,f,a,c,h,l,p,d;if((e=n[0]).x=0,e.y=0,!(o>1))return e.r;if(i=n[1],e.x=-i.r,i.x=e.r,i.y=0,!(o>2))return e.r+i.r;A(i,e,u=n[2]),e=new Node(e),i=new Node(i),u=new Node(u),e.next=u.previous=i,i.next=e.previous=u,u.next=i.previous=e;n:for(c=3;c<o;++c){A(e._,i._,u=n[c]),u=new Node(u),h=i.next,l=e.previous,p=i._.r,d=e._.r;do{if(p<=d){if(b(h._,u._)){i=h,e.next=i,i.previous=e,--c;continue n}p+=h._.r,h=h.next}else{if(b(l._,u._)){(e=l).next=i,i.previous=e,--c;continue n}d+=l._.r,l=l.previous}}while(h!==l.next);for(u.previous=e,u.next=i,e.next=i.previous=i=u,f=q(e);(u=u.next)!==i;)(a=q(u))<f&&(e=u,f=a);i=e.next}for(e=[i._],u=i;(u=u.next)!==i;)e.push(u._);for(u=y(e,r),c=0;c<o;++c)(e=n[c]).x-=u.x,e.y-=u.y;return u.r}function S(n){return Math.sqrt(n.value)}function k(n){return function(r){r.children||(r.r=Math.max(0,+n(r)||0))}}function I(n,r,t){return function(e){if(i=e.children){var i,u,o,f=i.length,a=n(e)*r||0;if(a)for(u=0;u<f;++u)i[u].r+=a;if(o=E(i,t),a)for(u=0;u<f;++u)i[u].r-=a;e.r=o+a}}}function T(n){return function(r){var t=r.parent;r.r*=n,t&&(r.x=t.x+n*r.x,r.y=t.y+n*r.y)}}function j(n){n.x0=Math.round(n.x0),n.y0=Math.round(n.y0),n.x1=Math.round(n.x1),n.y1=Math.round(n.y1)}function O(n,r,t,e,i){for(var u,o=n.children,f=-1,a=o.length,c=n.value&&(e-r)/n.value;++f<a;)(u=o[f]).y0=t,u.y1=i,u.x0=r,u.x1=r+=u.value*c}var R={depth:-1},D={},L={};function $(n){return n.id}function N(n){return n.parentId}function P(n){let r=n.length;if(r<2)return"";for(;--r>1&&!C(n,r););return n.slice(0,r)}function C(n,r){if("/"===n[r]){let t=0;for(;r>0&&"\\"===n[--r];)++t;if(0==(1&t))return!0}return!1}function F(n,r){return n.parent===r.parent?1:2}function G(n){var r=n.children;return r?r[0]:n.t}function H(n){var r=n.children;return r?r[r.length-1]:n.t}function J(n,r,t){var e=t/(r.i-n.i);r.c-=e,r.s+=t,n.c+=e,r.z+=t,r.m+=t}function K(n,r,t){return n.a.parent===r.parent?n.a:t}function Q(n,r){this._=n,this.parent=null,this.children=null,this.A=null,this.a=this,this.z=0,this.m=0,this.c=0,this.s=0,this.t=null,this.i=r}function U(n,r,t,e,i){for(var u,o=n.children,f=-1,a=o.length,c=n.value&&(i-t)/n.value;++f<a;)(u=o[f]).x0=r,u.x1=e,u.y0=t,u.y1=t+=u.value*c}Q.prototype=Object.create(h.prototype);var V=(1+Math.sqrt(5))/2;function W(n,r,t,e,i,u){for(var o,f,a,c,h,l,p,d,s,v,x,y=[],g=r.children,m=0,w=0,_=g.length,M=r.value;m<_;){a=i-t,c=u-e;do{h=g[w++].value}while(!h&&w<_);for(l=p=h,x=h*h*(v=Math.max(c/a,a/c)/(M*n)),s=Math.max(p/x,x/l);w<_;++w){if(h+=f=g[w].value,f<l&&(l=f),f>p&&(p=f),x=h*h*v,(d=Math.max(p/x,x/l))>s){h-=f;break}s=d}y.push(o={value:h,dice:a<c,children:g.slice(m,w)}),o.dice?O(o,t,e,i,M?e+=c*h/M:u):U(o,t,e,M?t+=a*h/M:i,u),M-=h,m=w}return y}var X=function n(r){function t(n,t,e,i,u){W(r,n,t,e,i,u)}return t.ratio=function(r){return n((r=+r)>1?r:1)},t}(V);var Y=function n(r){function t(n,t,e,i,u){if((o=n._squarify)&&o.ratio===r)for(var o,f,a,c,h,l=-1,p=o.length,d=n.value;++l<p;){for(a=(f=o[l]).children,c=f.value=0,h=a.length;c<h;++c)f.value+=a[c].value;f.dice?O(f,t,e,i,d?e+=(u-e)*f.value/d:u):U(f,t,e,d?t+=(i-t)*f.value/d:i,u),d-=f.value}else n._squarify=o=W(r,n,t,e,i,u),o.ratio=r}return t.ratio=function(r){return n((r=+r)>1?r:1)},t}(V);n.Node=h,n.cluster=function(){var n=r,i=1,u=1,o=!1;function f(r){var f,a=0;r.eachAfter((function(r){var i=r.children;i?(r.x=function(n){return n.reduce(t,0)/n.length}(i),r.y=function(n){return 1+n.reduce(e,0)}(i)):(r.x=f?a+=n(r,f):0,r.y=0,f=r)}));var c=function(n){for(var r;r=n.children;)n=r[0];return n}(r),h=function(n){for(var r;r=n.children;)n=r[r.length-1];return n}(r),l=c.x-n(c,h)/2,p=h.x+n(h,c)/2;return r.eachAfter(o?function(n){n.x=(n.x-r.x)*i,n.y=(r.y-n.y)*u}:function(n){n.x=(n.x-l)/(p-l)*i,n.y=(1-(r.y?n.y/r.y:1))*u})}return f.separation=function(r){return arguments.length?(n=r,f):n},f.size=function(n){return arguments.length?(o=!1,i=+n[0],u=+n[1],f):o?null:[i,u]},f.nodeSize=function(n){return arguments.length?(o=!0,i=+n[0],u=+n[1],f):o?[i,u]:null},f},n.hierarchy=u,n.pack=function(){var n=null,r=1,t=1,e=d;function i(i){const u=x();return i.x=r/2,i.y=t/2,n?i.eachBefore(k(n)).eachAfter(I(e,.5,u)).eachBefore(T(1)):i.eachBefore(k(S)).eachAfter(I(d,1,u)).eachAfter(I(e,i.r/Math.min(r,t),u)).eachBefore(T(Math.min(r,t)/(2*i.r))),i}return i.radius=function(r){return arguments.length?(n=l(r),i):n},i.size=function(n){return arguments.length?(r=+n[0],t=+n[1],i):[r,t]},i.padding=function(n){return arguments.length?(e="function"==typeof n?n:s(+n),i):e},i},n.packEnclose=function(n){return y(n,x())},n.packSiblings=function(n){return E(n,x()),n},n.partition=function(){var n=1,r=1,t=0,e=!1;function i(i){var u=i.height+1;return i.x0=i.y0=t,i.x1=n,i.y1=r/u,i.eachBefore(function(n,r){return function(e){e.children&&O(e,e.x0,n*(e.depth+1)/r,e.x1,n*(e.depth+2)/r);var i=e.x0,u=e.y0,o=e.x1-t,f=e.y1-t;o<i&&(i=o=(i+o)/2),f<u&&(u=f=(u+f)/2),e.x0=i,e.y0=u,e.x1=o,e.y1=f}}(r,u)),e&&i.eachBefore(j),i}return i.round=function(n){return arguments.length?(e=!!n,i):e},i.size=function(t){return arguments.length?(n=+t[0],r=+t[1],i):[n,r]},i.padding=function(n){return arguments.length?(t=+n,i):t},i},n.stratify=function(){var n,r=$,t=N;function e(e){var i,u,o,f,a,l,p,d,s=Array.from(e),v=r,x=t,y=new Map;if(null!=n){const r=s.map(((r,t)=>function(n){let r=(n=`${n}`).length;C(n,r-1)&&!C(n,r-2)&&(n=n.slice(0,-1));return"/"===n[0]?n:`/${n}`}(n(r,t,e)))),t=r.map(P),i=new Set(r).add("");for(const n of t)i.has(n)||(i.add(n),r.push(n),t.push(P(n)),s.push(L));v=(n,t)=>r[t],x=(n,r)=>t[r]}for(o=0,i=s.length;o<i;++o)u=s[o],l=s[o]=new h(u),null!=(p=v(u,o,e))&&(p+="")&&(d=l.id=p,y.set(d,y.has(d)?D:l)),null!=(p=x(u,o,e))&&(p+="")&&(l.parent=p);for(o=0;o<i;++o)if(p=(l=s[o]).parent){if(!(a=y.get(p)))throw new Error("missing: "+p);if(a===D)throw new Error("ambiguous: "+p);a.children?a.children.push(l):a.children=[l],l.parent=a}else{if(f)throw new Error("multiple roots");f=l}if(!f)throw new Error("no root");if(null!=n){for(;f.data===L&&1===f.children.length;)f=f.children[0],--i;for(let n=s.length-1;n>=0&&(l=s[n],l.data===L);--n)l.data=null}if(f.parent=R,f.eachBefore((function(n){n.depth=n.parent.depth+1,--i})).eachBefore(c),f.parent=null,i>0)throw new Error("cycle");return f}return e.id=function(n){return arguments.length?(r=l(n),e):r},e.parentId=function(n){return arguments.length?(t=l(n),e):t},e.path=function(r){return arguments.length?(n=l(r),e):n},e},n.tree=function(){var n=F,r=1,t=1,e=null;function i(i){var a=function(n){for(var r,t,e,i,u,o=new Q(n,0),f=[o];r=f.pop();)if(e=r._.children)for(r.children=new Array(u=e.length),i=u-1;i>=0;--i)f.push(t=r.children[i]=new Q(e[i],i)),t.parent=r;return(o.parent=new Q(null,0)).children=[o],o}(i);if(a.eachAfter(u),a.parent.m=-a.z,a.eachBefore(o),e)i.eachBefore(f);else{var c=i,h=i,l=i;i.eachBefore((function(n){n.x<c.x&&(c=n),n.x>h.x&&(h=n),n.depth>l.depth&&(l=n)}));var p=c===h?1:n(c,h)/2,d=p-c.x,s=r/(h.x+p+d),v=t/(l.depth||1);i.eachBefore((function(n){n.x=(n.x+d)*s,n.y=n.depth*v}))}return i}function u(r){var t=r.children,e=r.parent.children,i=r.i?e[r.i-1]:null;if(t){!function(n){for(var r,t=0,e=0,i=n.children,u=i.length;--u>=0;)(r=i[u]).z+=t,r.m+=t,t+=r.s+(e+=r.c)}(r);var u=(t[0].z+t[t.length-1].z)/2;i?(r.z=i.z+n(r._,i._),r.m=r.z-u):r.z=u}else i&&(r.z=i.z+n(r._,i._));r.parent.A=function(r,t,e){if(t){for(var i,u=r,o=r,f=t,a=u.parent.children[0],c=u.m,h=o.m,l=f.m,p=a.m;f=H(f),u=G(u),f&&u;)a=G(a),(o=H(o)).a=r,(i=f.z+l-u.z-c+n(f._,u._))>0&&(J(K(f,r,e),r,i),c+=i,h+=i),l+=f.m,c+=u.m,p+=a.m,h+=o.m;f&&!H(o)&&(o.t=f,o.m+=l-h),u&&!G(a)&&(a.t=u,a.m+=c-p,e=r)}return e}(r,i,r.parent.A||e[0])}function o(n){n._.x=n.z+n.parent.m,n.m+=n.parent.m}function f(n){n.x*=r,n.y=n.depth*t}return i.separation=function(r){return arguments.length?(n=r,i):n},i.size=function(n){return arguments.length?(e=!1,r=+n[0],t=+n[1],i):e?null:[r,t]},i.nodeSize=function(n){return arguments.length?(e=!0,r=+n[0],t=+n[1],i):e?[r,t]:null},i},n.treemap=function(){var n=X,r=!1,t=1,e=1,i=[0],u=d,o=d,f=d,a=d,c=d;function h(n){return n.x0=n.y0=0,n.x1=t,n.y1=e,n.eachBefore(l),i=[0],r&&n.eachBefore(j),n}function l(r){var t=i[r.depth],e=r.x0+t,h=r.y0+t,l=r.x1-t,p=r.y1-t;l<e&&(e=l=(e+l)/2),p<h&&(h=p=(h+p)/2),r.x0=e,r.y0=h,r.x1=l,r.y1=p,r.children&&(t=i[r.depth+1]=u(r)/2,e+=c(r)-t,h+=o(r)-t,(l-=f(r)-t)<e&&(e=l=(e+l)/2),(p-=a(r)-t)<h&&(h=p=(h+p)/2),n(r,e,h,l,p))}return h.round=function(n){return arguments.length?(r=!!n,h):r},h.size=function(n){return arguments.length?(t=+n[0],e=+n[1],h):[t,e]},h.tile=function(r){return arguments.length?(n=p(r),h):n},h.padding=function(n){return arguments.length?h.paddingInner(n).paddingOuter(n):h.paddingInner()},h.paddingInner=function(n){return arguments.length?(u="function"==typeof n?n:s(+n),h):u},h.paddingOuter=function(n){return arguments.length?h.paddingTop(n).paddingRight(n).paddingBottom(n).paddingLeft(n):h.paddingTop()},h.paddingTop=function(n){return arguments.length?(o="function"==typeof n?n:s(+n),h):o},h.paddingRight=function(n){return arguments.length?(f="function"==typeof n?n:s(+n),h):f},h.paddingBottom=function(n){return arguments.length?(a="function"==typeof n?n:s(+n),h):a},h.paddingLeft=function(n){return arguments.length?(c="function"==typeof n?n:s(+n),h):c},h},n.treemapBinary=function(n,r,t,e,i){var u,o,f=n.children,a=f.length,c=new Array(a+1);for(c[0]=o=u=0;u<a;++u)c[u+1]=o+=f[u].value;!function n(r,t,e,i,u,o,a){if(r>=t-1){var h=f[r];return h.x0=i,h.y0=u,h.x1=o,void(h.y1=a)}var l=c[r],p=e/2+l,d=r+1,s=t-1;for(;d<s;){var v=d+s>>>1;c[v]<p?d=v+1:s=v}p-c[d-1]<c[d]-p&&r+1<d&&--d;var x=c[d]-l,y=e-x;if(o-i>a-u){var g=e?(i*y+o*x)/e:o;n(r,d,x,i,u,g,a),n(d,t,y,g,u,o,a)}else{var m=e?(u*y+a*x)/e:a;n(r,d,x,i,u,o,m),n(d,t,y,i,m,o,a)}}(0,a,n.value,r,t,e,i)},n.treemapDice=O,n.treemapResquarify=Y,n.treemapSlice=U,n.treemapSliceDice=function(n,r,t,e,i){(1&n.depth?U:O)(n,r,t,e,i)},n.treemapSquarify=X,Object.defineProperty(n,"__esModule",{value:!0})}));
+</script>
+<script>
+const DATA = {"asof":"2026-10-19","period":"09.01–19.10.2026","usd_rate":475.09,"under_threshold":99.95,"totals":{"issuers":41,"n":187,"vol_bn":3241.837},"segments":[{"code":"quasi","name":"Квазигосударственные","short":"Квазигос","issuers":10,"n":76,"vol_bn":2119.424,"vol_share":65.38,"n_share":40.64,"with_cov":66,"under":8,"cov_med":106.15,"spr_n":64,"spr_p50":0.43},{"code":"bank","name":"Банки","short":"Банки","issuers":7,"n":32,"vol_bn":547.205,"vol_share":16.88,"n_share":17.11,"with_cov":30,"under":6,"cov_med":100.0,"spr_n":28,"spr_p50":2.9},{"code":"corp","name":"Корпорации","short":"Корпорации","issuers":9,"n":23,"vol_bn":86.657,"vol_share":2.67,"n_share":12.3,"with_cov":21,"under":5,"cov_med":100.1,"spr_n":10,"spr_p50":4.095},{"code":"mfo","name":"Микрофинансовые организации","short":"МФО","issuers":7,"n":18,"vol_bn":47.222,"vol_share":1.46,"n_share":9.63,"with_cov":17,"under":5,"cov_med":103.4,"spr_n":14,"spr_p50":6.415},{"code":"leas","name":"Лизинговые компании","short":"Лизинг","issuers":6,"n":24,"vol_bn":16.661,"vol_share":0.51,"n_share":12.83,"with_cov":19,"under":8,"cov_med":100.0,"spr_n":18,"spr_p50":6.485},{"code":"ifi","name":"Международные финорганизации","short":"Межд. финорганизации","issuers":2,"n":14,"vol_bn":424.668,"vol_share":13.1,"n_share":7.49,"with_cov":14,"under":2,"cov_med":102.05,"spr_n":11,"spr_p50":-0.07}],"bins":{"demand":[{"key":"w2","from":null,"to":80,"label":"меньше 80%"},{"key":"w1","from":80,"to":99.95,"label":"80–100%"},{"key":"n","from":99.95,"to":105,"label":"100–105%"},{"key":"c1","from":105,"to":150,"label":"105–150%"},{"key":"c2","from":150,"to":null,"label":"от 150%"}],"price":[{"key":"c2","from":null,"to":-1.0,"label":"−1 и ниже"},{"key":"c1","from":-1.0,"to":-0.25,"label":"от −1 до −0,25"},{"key":"n","from":-0.25,"to":0.25,"label":"±0,25"},{"key":"w1","from":0.25,"to":1.0,"label":"от +0,25 до +1"},{"key":"w2","from":1.0,"to":null,"label":"+1 и выше"}]},"issuers":[{"name":"Самрук-Қазына","label":"Самрук-Қазына","seg":"quasi","vol_bn":490.7,"n":8,"ccy":["KZT"],"first":"2026-07-08","last":"2026-10-02","with_cov":8,"under":2,"cov_med":100.0,"spr_n":0,"spr_med":null,"seg_p50":0.43,"spr_delta":null,"ten_med":15.0,"spr_na":"плавающая ставка","cov_na":null,"bin_demand":"n","bin_price":"na","in_guide":false,"deal_ids":[1577084,1577083,1577080,1573657,1572540,1572538,1570595,1570593]},{"name":"Байтерек","label":"Байтерек","seg":"quasi","vol_bn":484.514,"n":8,"ccy":["KZT","USD"],"first":"2026-03-05","last":"2026-07-31","with_cov":6,"under":0,"cov_med":120.65,"spr_n":6,"spr_med":0.61,"seg_p50":0.43,"spr_delta":0.18,"ten_med":1.08,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"n","in_guide":true,"deal_ids":[1572536,1570603,1570318,1566739,1566178,1564057,1563577,1561885]},{"name":"Отбасы банк","label":"Отбасы банк","seg":"quasi","vol_bn":350.017,"n":7,"ccy":["KZT"],"first":"2026-03-12","last":"2026-10-14","with_cov":7,"under":2,"cov_med":100.0,"spr_n":7,"spr_med":1.86,"seg_p50":0.43,"spr_delta":1.43,"ten_med":5.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w2","in_guide":true,"deal_ids":[1577826,1577481,1570215,1567153,1567150,1562224,1562222]},{"name":"Казахстанский фонд устойчивости","label":"КФУ","seg":"quasi","vol_bn":286.398,"n":34,"ccy":["KZT"],"first":"2026-01-09","last":"2026-10-15","with_cov":28,"under":2,"cov_med":124.35,"spr_n":34,"spr_med":-0.05,"seg_p50":0.43,"spr_delta":-0.48,"ten_med":1.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"c1","in_guide":true,"deal_ids":[1577957,1576334,1575873,1575415,1574872,1573874,1573426,1572927,1571802,1571201,1569588,1569128,1569126,1568612,1568605,1567653,1564443,1563964,1563961,1563486,1563484,1563241,1563239,1562661,1562659,1562307,1562305,1561886,1561370,1560653,1560260,1559134,1558721,1558430]},{"name":"Казахстанская Жилищная Компания","label":"КЖК","seg":"quasi","vol_bn":200.0,"n":4,"ccy":["KZT"],"first":"2026-06-25","last":"2026-09-24","with_cov":4,"under":0,"cov_med":129.3,"spr_n":4,"spr_med":1.59,"seg_p50":0.43,"spr_delta":1.16,"ten_med":4.5,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"w2","in_guide":true,"deal_ids":[1576339,1575772,1571203,1569590]},{"name":"Фонд развития промышленности","label":"ФРП","seg":"quasi","vol_bn":144.198,"n":6,"ccy":["KZT"],"first":"2026-05-29","last":"2026-10-01","with_cov":6,"under":1,"cov_med":100.0,"spr_n":6,"spr_med":1.68,"seg_p50":0.43,"spr_delta":1.25,"ten_med":5.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w2","in_guide":true,"deal_ids":[1576966,1576965,1576832,1576831,1568728,1567655]},{"name":"КазАгроФинанс","label":"КазАгроФинанс","seg":"quasi","vol_bn":100.0,"n":3,"ccy":["KZT"],"first":"2026-02-05","last":"2026-10-19","with_cov":3,"under":0,"cov_med":100.0,"spr_n":3,"spr_med":1.66,"seg_p50":0.43,"spr_delta":1.23,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w2","in_guide":true,"deal_ids":[1578143,1567104,1560255]},{"name":"Национальная компания QazaqGaz","label":"QazaqGaz","seg":"quasi","vol_bn":38.882,"n":1,"ccy":["USD"],"first":"2026-05-12","last":"2026-05-12","with_cov":0,"under":0,"cov_med":null,"spr_n":0,"spr_med":null,"seg_p50":0.43,"spr_delta":null,"ten_med":null,"spr_na":"выпуски в валюте","cov_na":"KASE не опубликовала спрос к предложению","bin_demand":"na","bin_price":"na","in_guide":false,"deal_ids":[1566282]},{"name":"Аграрная кредитная корпорация","label":"АКК","seg":"quasi","vol_bn":15.0,"n":1,"ccy":["KZT"],"first":"2026-07-15","last":"2026-07-15","with_cov":1,"under":0,"cov_med":100.0,"spr_n":1,"spr_med":1.05,"seg_p50":0.43,"spr_delta":0.62,"ten_med":0.75,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w1","in_guide":true,"deal_ids":[1571098]},{"name":"Банк Развития Казахстана","label":"БРК","seg":"quasi","vol_bn":9.715,"n":4,"ccy":["KZT","USD"],"first":"2026-08-06","last":"2026-10-01","with_cov":3,"under":1,"cov_med":100.0,"spr_n":3,"spr_med":0.74,"seg_p50":0.43,"spr_delta":0.31,"ten_med":7.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w1","in_guide":true,"deal_ids":[1576964,1574158,1573938,1572930]},{"name":"Bereke Bank","label":"Bereke Bank","seg":"bank","vol_bn":200.0,"n":3,"ccy":["KZT"],"first":"2026-09-02","last":"2026-09-03","with_cov":3,"under":0,"cov_med":100.0,"spr_n":0,"spr_med":null,"seg_p50":2.9,"spr_delta":null,"ten_med":1.75,"spr_na":"ставка не раскрыта","cov_na":null,"bin_demand":"n","bin_price":"na","in_guide":false,"deal_ids":[1574874,1574761,1574759]},{"name":"Altyn Bank","label":"Altyn Bank","seg":"bank","vol_bn":100.0,"n":1,"ccy":["KZT"],"first":"2026-09-24","last":"2026-09-24","with_cov":1,"under":0,"cov_med":106.2,"spr_n":1,"spr_med":1.59,"seg_p50":2.9,"spr_delta":-1.31,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"c2","in_guide":true,"deal_ids":[1576338]},{"name":"Народный Банк Казахстана","label":"Народный банк","seg":"bank","vol_bn":96.176,"n":2,"ccy":["KZT"],"first":"2026-07-01","last":"2026-09-30","with_cov":2,"under":0,"cov_med":100.05,"spr_n":2,"spr_med":-0.625,"seg_p50":2.9,"spr_delta":-3.525,"ten_med":0.25,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"c2","in_guide":true,"deal_ids":[1576830,1570086]},{"name":"Home Credit Bank","label":"Home Credit","seg":"bank","vol_bn":81.113,"n":15,"ccy":["KZT"],"first":"2026-01-30","last":"2026-08-25","with_cov":13,"under":0,"cov_med":100.1,"spr_n":15,"spr_med":2.76,"seg_p50":2.9,"spr_delta":-0.14,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"n","in_guide":true,"deal_ids":[1574161,1573049,1573048,1569948,1563377,1563375,1563373,1562656,1562650,1562648,1562646,1561888,1561804,1560183,1559817]},{"name":"Банк Bank RBK","label":"Bank RBK","seg":"bank","vol_bn":40.0,"n":1,"ccy":["KZT"],"first":"2026-09-23","last":"2026-09-23","with_cov":1,"under":1,"cov_med":80.0,"spr_n":1,"spr_med":2.34,"seg_p50":2.9,"spr_delta":-0.56,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"w1","bin_price":"c1","in_guide":true,"deal_ids":[1576259]},{"name":"KMF Банк","label":"KMF Банк","seg":"bank","vol_bn":29.221,"n":9,"ccy":["KZT"],"first":"2026-03-20","last":"2026-06-15","with_cov":9,"under":4,"cov_med":100.4,"spr_n":9,"spr_med":4.72,"seg_p50":2.9,"spr_delta":1.82,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w2","in_guide":true,"deal_ids":[1568852,1568518,1568516,1568120,1567768,1567511,1567408,1567406,1562753]},{"name":"Банк ЦентрКредит","label":"БЦК","seg":"bank","vol_bn":0.695,"n":1,"ccy":["USD"],"first":"2026-03-03","last":"2026-03-03","with_cov":1,"under":1,"cov_med":8.0,"spr_n":0,"spr_med":null,"seg_p50":2.9,"spr_delta":null,"ten_med":1.0,"spr_na":"выпуски в валюте","cov_na":null,"bin_demand":"w2","bin_price":"na","in_guide":false,"deal_ids":[1561670]},{"name":"BI Development Ltd.","label":"BI Development","seg":"corp","vol_bn":54.944,"n":12,"ccy":["KZT","USD"],"first":"2026-02-03","last":"2026-09-29","with_cov":11,"under":4,"cov_med":122.8,"spr_n":5,"spr_med":3.42,"seg_p50":4.095,"spr_delta":-0.675,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"c1","in_guide":true,"deal_ids":[1576706,1576704,1568421,1568419,1567065,1567063,1567058,1561286,1561215,1561213,1560068,1560067]},{"name":"TRANZIT TRANS LOGISTICS","label":"Tranzit Trans","seg":"corp","vol_bn":23.793,"n":3,"ccy":["KZT","USD"],"first":"2026-08-13","last":"2026-09-18","with_cov":3,"under":0,"cov_med":100.0,"spr_n":1,"spr_med":4.97,"seg_p50":4.095,"spr_delta":0.875,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w1","in_guide":true,"deal_ids":[1575980,1573428,1573427]},{"name":"Сейф-Ломбард","label":"Сейф-Ломбард","seg":"corp","vol_bn":3.495,"n":2,"ccy":["KZT"],"first":"2026-02-12","last":"2026-06-05","with_cov":2,"under":0,"cov_med":100.05,"spr_n":2,"spr_med":5.315,"seg_p50":4.095,"spr_delta":1.22,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w2","in_guide":true,"deal_ids":[1568162,1560657]},{"name":"QARABULAQ GOLD","label":"Qarabulaq Gold","seg":"corp","vol_bn":1.692,"n":1,"ccy":["USD"],"first":"2026-08-25","last":"2026-08-25","with_cov":0,"under":0,"cov_med":null,"spr_n":0,"spr_med":null,"seg_p50":4.095,"spr_delta":null,"ten_med":2.0,"spr_na":"выпуски в валюте","cov_na":"KASE не опубликовала спрос к предложению","bin_demand":"na","bin_price":"na","in_guide":false,"deal_ids":[1574163]},{"name":"BI Property","label":"BI Property","seg":"corp","vol_bn":1.5,"n":1,"ccy":["KZT"],"first":"2026-09-14","last":"2026-09-14","with_cov":1,"under":0,"cov_med":100.0,"spr_n":1,"spr_med":4.47,"seg_p50":4.095,"spr_delta":0.375,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w1","in_guide":true,"deal_ids":[1575560]},{"name":"Fincraft Group","label":"Fincraft","seg":"corp","vol_bn":0.457,"n":1,"ccy":["USD"],"first":"2026-09-11","last":"2026-09-11","with_cov":1,"under":0,"cov_med":191.5,"spr_n":0,"spr_med":null,"seg_p50":4.095,"spr_delta":null,"ten_med":1.0,"spr_na":"выпуски в валюте","cov_na":null,"bin_demand":"c2","bin_price":"na","in_guide":false,"deal_ids":[1575494]},{"name":"Скулбас","label":"Скулбас","seg":"corp","vol_bn":0.347,"n":1,"ccy":["USD"],"first":"2026-07-21","last":"2026-07-21","with_cov":1,"under":0,"cov_med":147.8,"spr_n":0,"spr_med":null,"seg_p50":4.095,"spr_delta":null,"ten_med":3.0,"spr_na":"выпуски в валюте","cov_na":null,"bin_demand":"c1","bin_price":"na","in_guide":false,"deal_ids":[1571581]},{"name":"Eurasia Building-British","label":"Eurasia Building","seg":"corp","vol_bn":0.31,"n":1,"ccy":["KZT"],"first":"2026-08-28","last":"2026-08-28","with_cov":1,"under":0,"cov_med":130.2,"spr_n":1,"spr_med":14.66,"seg_p50":4.095,"spr_delta":10.565,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"w2","in_guide":true,"deal_ids":[1574419]},{"name":"BASS Gold","label":"BASS Gold","seg":"corp","vol_bn":0.119,"n":1,"ccy":["USD"],"first":"2026-09-10","last":"2026-09-10","with_cov":1,"under":1,"cov_med":50.0,"spr_n":0,"spr_med":null,"seg_p50":4.095,"spr_delta":null,"ten_med":3.0,"spr_na":"выпуски в валюте","cov_na":null,"bin_demand":"w2","bin_price":"na","in_guide":false,"deal_ids":[1575419]},{"name":"TAS Finance Group","label":"TAS Finance","seg":"mfo","vol_bn":15.305,"n":6,"ccy":["KZT","USD"],"first":"2026-05-12","last":"2026-07-24","with_cov":6,"under":1,"cov_med":127.1,"spr_n":4,"spr_med":6.565,"seg_p50":6.415,"spr_delta":0.15,"ten_med":2.51,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"n","in_guide":true,"deal_ids":[1571960,1571813,1570326,1570321,1566863,1566360]},{"name":"Шинхан Финанс","label":"Шинхан Финанс","seg":"mfo","vol_bn":10.0,"n":1,"ccy":["KZT"],"first":"2026-07-23","last":"2026-07-23","with_cov":1,"under":0,"cov_med":100.0,"spr_n":1,"spr_med":1.8,"seg_p50":6.415,"spr_delta":-4.615,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"c2","in_guide":true,"deal_ids":[1571812]},{"name":"MyCar Finance","label":"MyCar Finance","seg":"mfo","vol_bn":6.59,"n":3,"ccy":["KZT"],"first":"2026-05-20","last":"2026-07-24","with_cov":3,"under":2,"cov_med":95.2,"spr_n":3,"spr_med":5.55,"seg_p50":6.415,"spr_delta":-0.865,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"w1","bin_price":"c1","in_guide":true,"deal_ids":[1571959,1571682,1566955]},{"name":"R-Finance","label":"R-Finance","seg":"mfo","vol_bn":6.587,"n":5,"ccy":["KZT","USD"],"first":"2026-02-11","last":"2026-05-29","with_cov":4,"under":1,"cov_med":109.5,"spr_n":3,"spr_med":6.85,"seg_p50":6.415,"spr_delta":0.435,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"w1","in_guide":true,"deal_ids":[1567657,1565023,1564583,1564344,1560568]},{"name":"Тойота Файнаншл Сервисез Казахстан","label":"Тойота Файнаншл","seg":"mfo","vol_bn":5.0,"n":1,"ccy":["KZT"],"first":"2026-07-17","last":"2026-07-17","with_cov":1,"under":0,"cov_med":120.0,"spr_n":1,"spr_med":2.0,"seg_p50":6.415,"spr_delta":-4.415,"ten_med":4.0,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"c2","in_guide":true,"deal_ids":[1571321]},{"name":"Swiss Capital","label":"Swiss Capital","seg":"mfo","vol_bn":3.0,"n":1,"ccy":["KZT"],"first":"2026-04-21","last":"2026-04-21","with_cov":1,"under":0,"cov_med":100.0,"spr_n":1,"spr_med":7.35,"seg_p50":6.415,"spr_delta":0.935,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"w1","in_guide":true,"deal_ids":[1564802]},{"name":"MOST","label":"MOST","seg":"mfo","vol_bn":0.74,"n":1,"ccy":["KZT"],"first":"2026-02-18","last":"2026-02-18","with_cov":1,"under":1,"cov_med":29.6,"spr_n":1,"spr_med":8.2,"seg_p50":6.415,"spr_delta":1.785,"ten_med":1.0,"spr_na":null,"cov_na":null,"bin_demand":"w2","bin_price":"w2","in_guide":true,"deal_ids":[1560921]},{"name":"Capital Leasing Group","label":"Capital Leasing","seg":"leas","vol_bn":9.539,"n":6,"ccy":["KZT"],"first":"2026-01-30","last":"2026-09-01","with_cov":6,"under":3,"cov_med":84.9,"spr_n":6,"spr_med":7.255,"seg_p50":6.485,"spr_delta":0.77,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"w1","bin_price":"w1","in_guide":true,"deal_ids":[1574668,1574043,1566478,1564448,1560343,1559819]},{"name":"Лизинг Групп","label":"Лизинг Групп","seg":"leas","vol_bn":4.127,"n":12,"ccy":["KZT","USD"],"first":"2026-01-20","last":"2026-10-16","with_cov":7,"under":1,"cov_med":102.7,"spr_n":6,"spr_med":5.395,"seg_p50":6.485,"spr_delta":-1.09,"ten_med":0.5,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"c2","in_guide":true,"deal_ids":[1578063,1578061,1575973,1573658,1572651,1571956,1571021,1571019,1562383,1559498,1559264,1558971]},{"name":"Orbis Leasing","label":"Orbis Leasing","seg":"leas","vol_bn":2.5,"n":2,"ccy":["KZT"],"first":"2026-03-06","last":"2026-04-21","with_cov":2,"under":0,"cov_med":100.25,"spr_n":2,"spr_med":5.54,"seg_p50":6.485,"spr_delta":-0.945,"ten_med":1.5,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"c1","in_guide":true,"deal_ids":[1564800,1561957]},{"name":"Garanti Leasing","label":"Garanti Leasing","seg":"leas","vol_bn":0.234,"n":2,"ccy":["KZT"],"first":"2026-01-19","last":"2026-02-18","with_cov":2,"under":2,"cov_med":50.05,"spr_n":2,"spr_med":7.695,"seg_p50":6.485,"spr_delta":1.21,"ten_med":1.0,"spr_na":null,"cov_na":null,"bin_demand":"w2","bin_price":"w2","in_guide":true,"deal_ids":[1560914,1558887]},{"name":"Эксперт Лизинг","label":"Эксперт Лизинг","seg":"leas","vol_bn":0.195,"n":1,"ccy":["KZT"],"first":"2026-03-03","last":"2026-03-03","with_cov":1,"under":1,"cov_med":38.9,"spr_n":1,"spr_med":6.02,"seg_p50":6.485,"spr_delta":-0.465,"ten_med":2.0,"spr_na":null,"cov_na":null,"bin_demand":"w2","bin_price":"c1","in_guide":true,"deal_ids":[1561669]},{"name":"Smart Leasing","label":"Smart Leasing","seg":"leas","vol_bn":0.066,"n":1,"ccy":["KZT"],"first":"2026-10-12","last":"2026-10-12","with_cov":1,"under":1,"cov_med":66.2,"spr_n":1,"spr_med":8.13,"seg_p50":6.485,"spr_delta":1.645,"ten_med":3.0,"spr_na":null,"cov_na":null,"bin_demand":"w2","bin_price":"w2","in_guide":true,"deal_ids":[1577668]},{"name":"Евразийский банк развития","label":"ЕАБР","seg":"ifi","vol_bn":341.868,"n":9,"ccy":["KZT","RUB","USD"],"first":"2026-02-19","last":"2026-09-15","with_cov":9,"under":2,"cov_med":121.7,"spr_n":6,"spr_med":-0.68,"seg_p50":-0.07,"spr_delta":-0.61,"ten_med":0.25,"spr_na":null,"cov_na":null,"bin_demand":"c1","bin_price":"c1","in_guide":true,"deal_ids":[1575673,1573871,1573335,1568942,1568857,1567056,1563237,1562486,1560976]},{"name":"Азиатский банк развития","label":"АБР","seg":"ifi","vol_bn":82.8,"n":5,"ccy":["KZT"],"first":"2026-06-02","last":"2026-10-15","with_cov":5,"under":0,"cov_med":100.0,"spr_n":5,"spr_med":-0.01,"seg_p50":-0.07,"spr_delta":0.06,"ten_med":3.58,"spr_na":null,"cov_na":null,"bin_demand":"n","bin_price":"n","in_guide":true,"deal_ids":[1577930,1575766,1573553,1573552,1567860]}],"deals":[{"id":1578143,"d":"2026-10-19","iss":"КазАгроФинанс","tk":"KAFIb21","ccy":"KZT","ten":3.0,"met":"подписка","fin":16.5,"knd":"купон","spr":1.66,"cov":100.0,"vol":26.5,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1578143"},{"id":1578063,"d":"2026-10-16","iss":"Лизинг Групп","tk":"LZGRb23","ccy":"KZT","ten":0.5,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.64,"cov":102.7,"vol":1.027,"prt":2.0,"ini":"Tencor Securities","url":"https://kase.kz/ru/information/news/show/1578063"},{"id":1578061,"d":"2026-10-16","iss":"Лизинг Групп","tk":"LZGRb22","ccy":"USD","ten":0.5,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":null,"vol":0.554,"prt":3.0,"ini":"Tencor Securities","url":"https://kase.kz/ru/information/news/show/1578061"},{"id":1577957,"d":"2026-10-15","iss":"Казахстанский фонд устойчивости","tk":"KFUSb126","ccy":"KZT","ten":1.0,"met":"спецторги","fin":15.3,"knd":"доходность","spr":-0.48,"cov":113.7,"vol":14.636,"prt":5.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1577957"},{"id":1577930,"d":"2026-10-15","iss":"Азиатский банк развития","tk":"ASDBe28","ccy":"KZT","ten":5.09,"met":"подписка","fin":14.2,"knd":"купон","spr":-0.23,"cov":102.5,"vol":20.0,"prt":3.0,"ini":"Tencor Securities","url":"https://kase.kz/ru/information/news/show/1577930"},{"id":1577826,"d":"2026-10-14","iss":"Отбасы банк","tk":"JSBNb14","ccy":"KZT","ten":5.0,"met":"подписка","fin":15.85,"knd":"доходность","spr":1.4,"cov":100.0,"vol":6.351,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1577826"},{"id":1577668,"d":"2026-10-12","iss":"Smart Leasing","tk":"SMTLb2","ccy":"KZT","ten":3.0,"met":"спецторги","fin":23.0,"knd":"купон","spr":8.13,"cov":66.2,"vol":0.066,"prt":1.0,"ini":"Standard","url":"https://kase.kz/ru/information/news/show/1577668"},{"id":1577481,"d":"2026-10-08","iss":"Отбасы банк","tk":"JSBNb14","ccy":"KZT","ten":5.0,"met":"спецторги","fin":15.85,"knd":"купон","spr":1.39,"cov":114.3,"vol":43.666,"prt":6.0,"ini":"Отбасы банк","url":"https://kase.kz/ru/information/news/show/1577481"},{"id":1577084,"d":"2026-10-02","iss":"Самрук-Қазына","tk":"SKKZb39","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":100.0,"vol":76.0,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1577084"},{"id":1577083,"d":"2026-10-02","iss":"Самрук-Қазына","tk":"SKKZb38","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":100.0,"vol":76.0,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1577083"},{"id":1577080,"d":"2026-10-02","iss":"Самрук-Қазына","tk":"SKKZb37","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":100.0,"vol":65.0,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1577080"},{"id":1576966,"d":"2026-10-01","iss":"Фонд развития промышленности","tk":"IDFRb14","ccy":"KZT","ten":5.0,"met":"спецторги","fin":16.15,"knd":"купон","spr":1.68,"cov":71.0,"vol":14.198,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576966"},{"id":1576965,"d":"2026-10-01","iss":"Фонд развития промышленности","tk":"IDFRb13","ccy":"KZT","ten":5.0,"met":"спецторги","fin":16.15,"knd":"купон","spr":1.68,"cov":100.0,"vol":20.0,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576965"},{"id":1576964,"d":"2026-10-01","iss":"Банк Развития Казахстана","tk":"BRKZb37","ccy":"KZT","ten":7.0,"met":"подписка","fin":15.0,"knd":"доходность","spr":0.8,"cov":100.0,"vol":2.759,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576964"},{"id":1576832,"d":"2026-09-30","iss":"Фонд развития промышленности","tk":"IDFRb12","ccy":"KZT","ten":5.0,"met":"спецторги","fin":16.15,"knd":"купон","spr":1.68,"cov":100.0,"vol":20.0,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576832"},{"id":1576831,"d":"2026-09-30","iss":"Фонд развития промышленности","tk":"IDFRb11","ccy":"KZT","ten":5.0,"met":"спецторги","fin":16.15,"knd":"купон","spr":1.68,"cov":100.0,"vol":20.0,"prt":4.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576831"},{"id":1576830,"d":"2026-09-30","iss":"Народный Банк Казахстана","tk":"HSBKb24","ccy":"KZT","ten":0.25,"met":"спецторги","fin":15.74,"knd":"доходность","spr":-0.58,"cov":100.1,"vol":48.131,"prt":3.0,"ini":"Народный Банк Казахстана","url":"https://kase.kz/ru/information/news/show/1576830"},{"id":1576706,"d":"2026-09-29","iss":"BI Development Ltd.","tk":"BIGDb15","ccy":"USD","ten":3.0,"met":"спецторги","fin":7.75,"knd":"купон","spr":null,"cov":113.2,"vol":1.076,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576706"},{"id":1576704,"d":"2026-09-29","iss":"BI Development Ltd.","tk":"BIGDb13","ccy":"USD","ten":2.0,"met":"спецторги","fin":7.5,"knd":"купон","spr":null,"cov":162.4,"vol":5.4,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576704"},{"id":1576339,"d":"2026-09-24","iss":"Казахстанская Жилищная Компания","tk":"KZIKb44","ccy":"KZT","ten":4.0,"met":"подписка","fin":16.1,"knd":"купон","spr":1.43,"cov":110.3,"vol":50.0,"prt":7.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1576339"},{"id":1576338,"d":"2026-09-24","iss":"Altyn Bank","tk":"ATBNb3","ccy":"KZT","ten":3.0,"met":"спецторги","fin":16.5,"knd":"купон","spr":1.59,"cov":106.2,"vol":100.0,"prt":12.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1576338"},{"id":1576334,"d":"2026-09-24","iss":"Казахстанский фонд устойчивости","tk":"KFUSb128","ccy":"KZT","ten":2.0,"met":"спецторги","fin":15.18,"knd":"доходность","spr":-0.07,"cov":129.2,"vol":9.565,"prt":4.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1576334"},{"id":1576259,"d":"2026-09-23","iss":"Банк Bank RBK","tk":"INBNb18","ccy":"KZT","ten":3.0,"met":"спецторги","fin":17.25,"knd":"купон","spr":2.34,"cov":80.0,"vol":40.0,"prt":1.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1576259"},{"id":1575980,"d":"2026-09-18","iss":"TRANZIT TRANS LOGISTICS","tk":"TTLSb2","ccy":"USD","ten":3.0,"met":"подписка","fin":10.0,"knd":"доходность","spr":null,"cov":100.0,"vol":4.489,"prt":3.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1575980"},{"id":1575973,"d":"2026-09-18","iss":"Лизинг Групп","tk":"LZGRb16","ccy":"KZT","ten":1.0,"met":"спецторги","fin":22.0,"knd":"купон","spr":6.14,"cov":null,"vol":0.22,"prt":2.0,"ini":"Tencor Securities","url":"https://kase.kz/ru/information/news/show/1575973"},{"id":1575873,"d":"2026-09-17","iss":"Казахстанский фонд устойчивости","tk":"KFUSb99","ccy":"KZT","ten":1.0,"met":"спецторги","fin":15.39,"knd":"доходность","spr":-0.47,"cov":100.0,"vol":9.75,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1575873"},{"id":1575772,"d":"2026-09-16","iss":"Казахстанская Жилищная Компания","tk":"KZIKb43","ccy":"KZT","ten":4.0,"met":"спецторги","fin":16.1,"knd":"купон","spr":1.41,"cov":147.0,"vol":50.0,"prt":11.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1575772"},{"id":1575766,"d":"2026-09-16","iss":"Азиатский банк развития","tk":"ASDBe27","ccy":"KZT","ten":3.08,"met":"подписка","fin":14.9,"knd":"купон","spr":-0.01,"cov":101.6,"vol":18.8,"prt":3.0,"ini":"Tencor Securities","url":"https://kase.kz/ru/information/news/show/1575766"},{"id":1575673,"d":"2026-09-15","iss":"Евразийский банк развития","tk":"EABRb64","ccy":"KZT","ten":0.25,"met":"спецторги","fin":15.5,"knd":"доходность","spr":-0.95,"cov":94.0,"vol":27.159,"prt":5.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1575673"},{"id":1575560,"d":"2026-09-14","iss":"BI Property","tk":"BIPGb1","ccy":"KZT","ten":2.0,"met":"подписка","fin":19.75,"knd":"купон","spr":4.47,"cov":100.0,"vol":1.5,"prt":1.0,"ini":"ForteFinance","url":"https://kase.kz/ru/information/news/show/1575560"},{"id":1575494,"d":"2026-09-11","iss":"Fincraft Group","tk":"NCOMb15","ccy":"USD","ten":1.0,"met":"спецторги","fin":11.0,"knd":"доходность","spr":null,"cov":191.5,"vol":0.457,"prt":1.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1575494"},{"id":1575419,"d":"2026-09-10","iss":"BASS Gold","tk":"FPSTb13","ccy":"USD","ten":3.0,"met":"спецторги","fin":10.5,"knd":"доходность","spr":null,"cov":50.0,"vol":0.119,"prt":1.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1575419"},{"id":1575415,"d":"2026-09-10","iss":"Казахстанский фонд устойчивости","tk":"KFUSb98","ccy":"KZT","ten":1.0,"met":"спецторги","fin":15.4,"knd":"доходность","spr":-0.49,"cov":125.0,"vol":9.749,"prt":3.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1575415"},{"id":1574874,"d":"2026-09-03","iss":"Bereke Bank","tk":"BERKb23","ccy":"KZT","ten":2.25,"met":"подписка","fin":null,"knd":null,"spr":null,"cov":100.0,"vol":100.0,"prt":1.0,"ini":"Bereke Bank","url":"https://kase.kz/ru/information/news/show/1574874"},{"id":1574872,"d":"2026-09-03","iss":"Казахстанский фонд устойчивости","tk":"KFUSb97","ccy":"KZT","ten":1.0,"met":"спецторги","fin":15.7,"knd":"доходность","spr":-0.2,"cov":123.7,"vol":9.71,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1574872"},{"id":1574761,"d":"2026-09-02","iss":"Bereke Bank","tk":"BERKb22","ccy":"KZT","ten":1.75,"met":"подписка","fin":null,"knd":null,"spr":null,"cov":100.0,"vol":50.0,"prt":1.0,"ini":"Bereke Bank","url":"https://kase.kz/ru/information/news/show/1574761"},{"id":1574759,"d":"2026-09-02","iss":"Bereke Bank","tk":"BERKb21","ccy":"KZT","ten":0.75,"met":"подписка","fin":null,"knd":null,"spr":null,"cov":100.0,"vol":50.0,"prt":1.0,"ini":"Bereke Bank","url":"https://kase.kz/ru/information/news/show/1574759"},{"id":1574668,"d":"2026-09-01","iss":"Capital Leasing Group","tk":"CLSGb12","ccy":"KZT","ten":3.0,"met":"спецторги","fin":22.5,"knd":"купон","spr":7.54,"cov":169.6,"vol":0.339,"prt":1.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1574668"},{"id":1574419,"d":"2026-08-28","iss":"Eurasia Building-British","tk":"ERBBb2","ccy":"KZT","ten":2.0,"met":"спецторги","fin":30.0,"knd":"доходность","spr":14.66,"cov":130.2,"vol":0.31,"prt":1.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1574419"},{"id":1574163,"d":"2026-08-25","iss":"QARABULAQ GOLD","tk":"QGLDb1","ccy":"USD","ten":2.0,"met":"спецторги","fin":10.0,"knd":"доходность","spr":null,"cov":null,"vol":1.692,"prt":2.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1574163"},{"id":1574161,"d":"2026-08-25","iss":"Home Credit Bank","tk":"HCBNb29","ccy":"KZT","ten":3.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":2.51,"cov":114.0,"vol":5.7,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1574161"},{"id":1574158,"d":"2026-08-25","iss":"Банк Развития Казахстана","tk":"BRKZb37","ccy":"KZT","ten":7.0,"met":"подписка","fin":15.0,"knd":"доходность","spr":0.74,"cov":100.0,"vol":0.565,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1574158"},{"id":1574043,"d":"2026-08-24","iss":"Capital Leasing Group","tk":"CLSGb13","ccy":"KZT","ten":3.0,"met":"спецторги","fin":22.5,"knd":"купон","spr":7.51,"cov":1.8,"vol":0.004,"prt":1.0,"ini":"Standard","url":"https://kase.kz/ru/information/news/show/1574043"},{"id":1573938,"d":"2026-08-21","iss":"Банк Развития Казахстана","tk":"BRKZb37","ccy":"KZT","ten":7.0,"met":"подписка","fin":15.0,"knd":"купон","spr":0.72,"cov":51.5,"vol":0.6,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1573938"},{"id":1573874,"d":"2026-08-20","iss":"Казахстанский фонд устойчивости","tk":"KFUSb96","ccy":"KZT","ten":1.0,"met":"спецторги","fin":15.95,"knd":"доходность","spr":-0.01,"cov":160.0,"vol":9.7,"prt":4.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1573874"},{"id":1573871,"d":"2026-08-20","iss":"Евразийский банк развития","tk":"EABRb63","ccy":"KZT","ten":0.25,"met":"спецторги","fin":16.0,"knd":"доходность","spr":-0.55,"cov":118.1,"vol":34.082,"prt":3.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1573871"},{"id":1573658,"d":"2026-08-18","iss":"Лизинг Групп","tk":"LZGRb21","ccy":"KZT","ten":0.5,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.45,"cov":121.5,"vol":0.085,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1573658"},{"id":1573657,"d":"2026-08-18","iss":"Самрук-Қазына","tk":"SKKZb36","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":101.7,"vol":60.0,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1573657"},{"id":1573553,"d":"2026-08-17","iss":"Азиатский банк развития","tk":"ASDBe26","ccy":"KZT","ten":4.74,"met":"подписка","fin":14.55,"knd":"купон","spr":-0.07,"cov":100.0,"vol":9.0,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1573553"},{"id":1573552,"d":"2026-08-17","iss":"Азиатский банк развития","tk":"ASDBe25","ccy":"KZT","ten":3.58,"met":"подписка","fin":14.9,"knd":"купон","spr":0.04,"cov":100.0,"vol":15.0,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1573552"},{"id":1573428,"d":"2026-08-13","iss":"TRANZIT TRANS LOGISTICS","tk":"TTLSb3","ccy":"KZT","ten":3.0,"met":"подписка","fin":20.0,"knd":"доходность","spr":4.97,"cov":100.0,"vol":10.0,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1573428"},{"id":1573427,"d":"2026-08-13","iss":"TRANZIT TRANS LOGISTICS","tk":"TTLSb2","ccy":"USD","ten":3.0,"met":"подписка","fin":10.0,"knd":"доходность","spr":null,"cov":100.0,"vol":9.304,"prt":2.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1573427"},{"id":1573426,"d":"2026-08-13","iss":"Казахстанский фонд устойчивости","tk":"KFUSb118","ccy":"KZT","ten":2.0,"met":"спецторги","fin":15.55,"knd":"доходность","spr":0.17,"cov":103.8,"vol":8.439,"prt":3.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1573426"},{"id":1573335,"d":"2026-08-12","iss":"Евразийский банк развития","tk":"EABRb68","ccy":"RUB","ten":0.08,"met":"спецторги","fin":10.0,"knd":"доходность","spr":null,"cov":100.0,"vol":22.297,"prt":1.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1573335"},{"id":1573049,"d":"2026-08-07","iss":"Home Credit Bank","tk":"HCBNb28","ccy":"KZT","ten":3.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":2.44,"cov":112.0,"vol":1.681,"prt":2.0,"ini":"ForteFinance","url":"https://kase.kz/ru/information/news/show/1573049"},{"id":1573048,"d":"2026-08-07","iss":"Home Credit Bank","tk":"HCBNb23","ccy":"KZT","ten":1.0,"met":"спецторги","fin":17.75,"knd":"купон","spr":1.73,"cov":100.0,"vol":2.0,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1573048"},{"id":1572930,"d":"2026-08-06","iss":"Банк Развития Казахстана","tk":"BRKZe18","ccy":"USD","ten":null,"met":"подписка","fin":5.45,"knd":"доходность","spr":null,"cov":null,"vol":5.791,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1572930"},{"id":1572927,"d":"2026-08-06","iss":"Казахстанский фонд устойчивости","tk":"KFUSb113","ccy":"KZT","ten":2.0,"met":"спецторги","fin":15.7,"knd":"доходность","spr":0.29,"cov":167.4,"vol":9.485,"prt":3.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1572927"},{"id":1572651,"d":"2026-08-03","iss":"Лизинг Групп","tk":"LZGRb20","ccy":"USD","ten":1.0,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":101.0,"vol":0.048,"prt":1.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1572651"},{"id":1572540,"d":"2026-07-31","iss":"Самрук-Қазына","tk":"SKKZb35","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":102.7,"vol":55.5,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1572540"},{"id":1572538,"d":"2026-07-31","iss":"Самрук-Қазына","tk":"SKKZb34","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":100.9,"vol":55.5,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1572538"},{"id":1572536,"d":"2026-07-31","iss":"Байтерек","tk":"BTRKb34","ccy":"KZT","ten":5.0,"met":"спецторги","fin":15.9,"knd":"купон","spr":1.26,"cov":101.1,"vol":60.5,"prt":10.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1572536"},{"id":1571960,"d":"2026-07-24","iss":"TAS Finance Group","tk":"MFTSb8","ccy":"KZT","ten":2.51,"met":"спецторги","fin":22.0,"knd":"доходность","spr":6.75,"cov":100.6,"vol":0.916,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1571960"},{"id":1571959,"d":"2026-07-24","iss":"MyCar Finance","tk":"MFMCb3","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":5.55,"cov":107.0,"vol":1.109,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1571959"},{"id":1571956,"d":"2026-07-24","iss":"Лизинг Групп","tk":"LZGRb17","ccy":"KZT","ten":0.25,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.32,"cov":117.0,"vol":0.117,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1571956"},{"id":1571813,"d":"2026-07-23","iss":"TAS Finance Group","tk":"MFTSb8","ccy":"KZT","ten":2.51,"met":"подписка","fin":22.0,"knd":"доходность","spr":6.75,"cov":117.1,"vol":6.072,"prt":3.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1571813"},{"id":1571812,"d":"2026-07-23","iss":"Шинхан Финанс","tk":"MFSHb1","ccy":"KZT","ten":2.0,"met":"подписка","fin":17.25,"knd":"купон","spr":1.8,"cov":100.0,"vol":10.0,"prt":4.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1571812"},{"id":1571802,"d":"2026-07-23","iss":"Казахстанский фонд устойчивости","tk":"KFUSb112","ccy":"KZT","ten":2.0,"met":"спецторги","fin":15.95,"knd":"доходность","spr":0.5,"cov":110.2,"vol":9.446,"prt":4.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1571802"},{"id":1571682,"d":"2026-07-22","iss":"MyCar Finance","tk":"MFMCb3","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":5.55,"cov":69.5,"vol":0.72,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1571682"},{"id":1571581,"d":"2026-07-21","iss":"Скулбас","tk":"SCLBb3","ccy":"USD","ten":3.0,"met":"спецторги","fin":11.0,"knd":"купон","spr":null,"cov":147.8,"vol":0.347,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1571581"},{"id":1571321,"d":"2026-07-17","iss":"Тойота Файнаншл Сервисез Казахстан","tk":"MFTFb7","ccy":"KZT","ten":4.0,"met":"спецторги","fin":16.95,"knd":"купон","spr":2.0,"cov":120.0,"vol":5.0,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1571321"},{"id":1571203,"d":"2026-07-16","iss":"Казахстанская Жилищная Компания","tk":"KZIKb45","ccy":"KZT","ten":5.0,"met":"спецторги","fin":16.5,"knd":"купон","spr":1.75,"cov":121.5,"vol":50.0,"prt":11.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1571203"},{"id":1571201,"d":"2026-07-16","iss":"Казахстанский фонд устойчивости","tk":"KFUSb95","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.15,"knd":"доходность","spr":-0.04,"cov":123.6,"vol":9.682,"prt":3.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1571201"},{"id":1571098,"d":"2026-07-15","iss":"Аграрная кредитная корпорация","tk":"AGKKb24","ccy":"KZT","ten":0.75,"met":"подписка","fin":17.5,"knd":"купон","spr":1.05,"cov":100.0,"vol":15.0,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1571098"},{"id":1571021,"d":"2026-07-14","iss":"Лизинг Групп","tk":"LZGRb19","ccy":"USD","ten":0.25,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":78.5,"vol":0.562,"prt":3.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1571021"},{"id":1571019,"d":"2026-07-14","iss":"Лизинг Групп","tk":"LZGRb18","ccy":"USD","ten":0.5,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":null,"vol":1.12,"prt":3.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1571019"},{"id":1570603,"d":"2026-07-08","iss":"Байтерек","tk":"BTRKe6","ccy":"USD","ten":7.0,"met":"подписка","fin":5.45,"knd":"доходность","spr":null,"cov":null,"vol":15.549,"prt":5.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1570603"},{"id":1570595,"d":"2026-07-08","iss":"Самрук-Қазына","tk":"SKKZb33","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":37.0,"vol":51.35,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1570595"},{"id":1570593,"d":"2026-07-08","iss":"Самрук-Қазына","tk":"SKKZb32","ccy":"KZT","ten":15.0,"met":"спецторги","fin":1.0,"knd":"маржа","spr":null,"cov":37.0,"vol":51.35,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1570593"},{"id":1570326,"d":"2026-07-03","iss":"TAS Finance Group","tk":"MFTSb9","ccy":"KZT","ten":2.0,"met":"подписка","fin":22.0,"knd":"доходность","spr":6.16,"cov":139.9,"vol":2.098,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1570326"},{"id":1570321,"d":"2026-07-03","iss":"TAS Finance Group","tk":"MFTSb8","ccy":"KZT","ten":2.51,"met":"подписка","fin":22.0,"knd":"доходность","spr":6.38,"cov":137.1,"vol":2.742,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1570321"},{"id":1570318,"d":"2026-07-03","iss":"Байтерек","tk":"BTRKb33","ccy":"KZT","ten":5.0,"met":"спецторги","fin":15.95,"knd":"купон","spr":0.99,"cov":121.0,"vol":50.0,"prt":9.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1570318"},{"id":1570215,"d":"2026-07-02","iss":"Отбасы банк","tk":"JSBNb13","ccy":"KZT","ten":5.0,"met":"подписка","fin":17.45,"knd":"купон","spr":2.49,"cov":100.0,"vol":100.0,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1570215"},{"id":1570086,"d":"2026-07-01","iss":"Народный Банк Казахстана","tk":"HSBKb23","ccy":"KZT","ten":0.25,"met":"спецторги","fin":16.5,"knd":"доходность","spr":-0.67,"cov":100.0,"vol":48.045,"prt":3.0,"ini":"Народный Банк Казахстана","url":"https://kase.kz/ru/information/news/show/1570086"},{"id":1569948,"d":"2026-06-30","iss":"Home Credit Bank","tk":"HCBNb30","ccy":"KZT","ten":3.0,"met":"спецторги","fin":18.0,"knd":"купон","spr":2.55,"cov":100.0,"vol":2.0,"prt":1.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1569948"},{"id":1569590,"d":"2026-06-25","iss":"Казахстанская Жилищная Компания","tk":"KZIKb46","ccy":"KZT","ten":7.0,"met":"спецторги","fin":16.99,"knd":"купон","spr":2.21,"cov":137.1,"vol":50.0,"prt":9.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1569590"},{"id":1569588,"d":"2026-06-25","iss":"Казахстанский фонд устойчивости","tk":"KFUSb94","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.4,"knd":"доходность","spr":-0.24,"cov":null,"vol":4.832,"prt":3.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1569588"},{"id":1569128,"d":"2026-06-18","iss":"Казахстанский фонд устойчивости","tk":"KFUSb93","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.45,"knd":"доходность","spr":-0.38,"cov":103.1,"vol":9.657,"prt":4.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1569128"},{"id":1569126,"d":"2026-06-18","iss":"Казахстанский фонд устойчивости","tk":"KFUSb111","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.3,"knd":"доходность","spr":0.18,"cov":137.8,"vol":4.691,"prt":4.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1569126"},{"id":1568942,"d":"2026-06-16","iss":"Евразийский банк развития","tk":"EABRb62","ccy":"KZT","ten":0.25,"met":"спецторги","fin":16.25,"knd":"доходность","spr":-1.29,"cov":93.7,"vol":27.041,"prt":4.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1568942"},{"id":1568857,"d":"2026-06-15","iss":"Евразийский банк развития","tk":"EABRb66","ccy":"USD","ten":3.0,"met":"спецторги","fin":5.5,"knd":"купон","spr":null,"cov":177.4,"vol":42.149,"prt":9.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1568857"},{"id":1568852,"d":"2026-06-15","iss":"KMF Банк","tk":"MFKMb10","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":4.88,"cov":108.1,"vol":1.092,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1568852"},{"id":1568728,"d":"2026-06-12","iss":"Фонд развития промышленности","tk":"IDFRb9","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.29,"knd":"купон","spr":1.99,"cov":105.8,"vol":20.0,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1568728"},{"id":1568612,"d":"2026-06-11","iss":"Казахстанский фонд устойчивости","tk":"KFUSb110","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.25,"knd":"доходность","spr":-0.03,"cov":140.3,"vol":4.816,"prt":4.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1568612"},{"id":1568605,"d":"2026-06-11","iss":"Казахстанский фонд устойчивости","tk":"KFUSb88","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.25,"knd":"доходность","spr":-0.76,"cov":null,"vol":4.94,"prt":5.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1568605"},{"id":1568518,"d":"2026-06-10","iss":"KMF Банк","tk":"MFKMb11","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":4.72,"cov":1.1,"vol":0.014,"prt":1.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1568518"},{"id":1568516,"d":"2026-06-10","iss":"KMF Банк","tk":"MFKMb10","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":4.72,"cov":30.6,"vol":0.832,"prt":2.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1568516"},{"id":1568421,"d":"2026-06-09","iss":"BI Development Ltd.","tk":"BIGDb11","ccy":"KZT","ten":2.0,"met":"подписка","fin":20.0,"knd":"доходность","spr":3.72,"cov":153.9,"vol":7.459,"prt":2.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1568421"},{"id":1568419,"d":"2026-06-09","iss":"BI Development Ltd.","tk":"BIGDb7","ccy":"KZT","ten":2.0,"met":"подписка","fin":20.0,"knd":"доходность","spr":3.72,"cov":122.8,"vol":11.641,"prt":2.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1568419"},{"id":1568162,"d":"2026-06-05","iss":"Сейф-Ломбард","tk":"MFSLb15","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.5,"knd":"доходность","spr":5.07,"cov":100.1,"vol":1.984,"prt":2.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1568162"},{"id":1568120,"d":"2026-06-04","iss":"KMF Банк","tk":"MFKMb12","ccy":"KZT","ten":3.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":5.0,"cov":124.3,"vol":6.239,"prt":2.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1568120"},{"id":1567860,"d":"2026-06-02","iss":"Азиатский банк развития","tk":"ASDBe24","ccy":"KZT","ten":3.37,"met":"подписка","fin":16.5,"knd":"купон","spr":0.63,"cov":100.0,"vol":20.0,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1567860"},{"id":1567768,"d":"2026-06-01","iss":"KMF Банк","tk":"MFKMb10","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"доходность","spr":4.57,"cov":100.4,"vol":5.027,"prt":2.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1567768"},{"id":1567657,"d":"2026-05-29","iss":"R-Finance","tk":"MFRFb15","ccy":"KZT","ten":2.0,"met":"подписка","fin":23.0,"knd":"купон","spr":6.45,"cov":103.4,"vol":5.0,"prt":2.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1567657"},{"id":1567655,"d":"2026-05-29","iss":"Фонд развития промышленности","tk":"IDFRb10","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.88,"knd":"купон","spr":2.36,"cov":110.3,"vol":50.0,"prt":9.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1567655"},{"id":1567653,"d":"2026-05-29","iss":"Казахстанский фонд устойчивости","tk":"KFUSb89","ccy":"KZT","ten":1.0,"met":"спецторги","fin":17.0,"knd":"доходность","spr":-0.32,"cov":125.0,"vol":9.616,"prt":3.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1567653"},{"id":1567511,"d":"2026-05-28","iss":"KMF Банк","tk":"MFKMb10","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"купон","spr":4.45,"cov":21.3,"vol":1.064,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1567511"},{"id":1567408,"d":"2026-05-26","iss":"KMF Банк","tk":"MFKMb12","ccy":"KZT","ten":3.0,"met":"спецторги","fin":21.0,"knd":"купон","spr":4.91,"cov":75.8,"vol":3.789,"prt":5.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1567408"},{"id":1567406,"d":"2026-05-26","iss":"KMF Банк","tk":"MFKMb11","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"купон","spr":4.45,"cov":123.3,"vol":6.164,"prt":3.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1567406"},{"id":1567153,"d":"2026-05-22","iss":"Отбасы банк","tk":"JSBNb12","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":1.86,"cov":120.1,"vol":50.0,"prt":7.0,"ini":"Отбасы банк","url":"https://kase.kz/ru/information/news/show/1567153"},{"id":1567150,"d":"2026-05-22","iss":"Отбасы банк","tk":"JSBNb11","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":1.86,"cov":111.0,"vol":50.0,"prt":7.0,"ini":"Отбасы банк","url":"https://kase.kz/ru/information/news/show/1567150"},{"id":1567104,"d":"2026-05-22","iss":"КазАгроФинанс","tk":"KAFIb20","ccy":"KZT","ten":3.0,"met":"подписка","fin":17.5,"knd":"купон","spr":1.33,"cov":100.0,"vol":23.5,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1567104"},{"id":1567065,"d":"2026-05-21","iss":"BI Development Ltd.","tk":"BIGDb11","ccy":"KZT","ten":2.0,"met":"спецторги","fin":20.0,"knd":"купон","spr":3.42,"cov":64.4,"vol":3.218,"prt":2.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1567065"},{"id":1567063,"d":"2026-05-21","iss":"BI Development Ltd.","tk":"BIGDb8","ccy":"KZT","ten":2.0,"met":"спецторги","fin":20.0,"knd":"купон","spr":3.42,"cov":70.0,"vol":3.5,"prt":1.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1567063"},{"id":1567058,"d":"2026-05-21","iss":"BI Development Ltd.","tk":"BIGDb7","ccy":"KZT","ten":2.0,"met":"спецторги","fin":20.0,"knd":"купон","spr":3.42,"cov":66.1,"vol":3.304,"prt":3.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1567058"},{"id":1567056,"d":"2026-05-21","iss":"Евразийский банк развития","tk":"EABRb61","ccy":"KZT","ten":0.25,"met":"спецторги","fin":17.2,"knd":"доходность","spr":-0.81,"cov":133.5,"vol":38.413,"prt":6.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1567056"},{"id":1566955,"d":"2026-05-20","iss":"MyCar Finance","tk":"MFMCb3","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.0,"knd":"купон","spr":4.42,"cov":95.2,"vol":4.761,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1566955"},{"id":1566863,"d":"2026-05-19","iss":"TAS Finance Group","tk":"MFTSb6","ccy":"KZT","ten":null,"met":"спецторги","fin":22.0,"knd":"доходность","spr":null,"cov":158.3,"vol":1.576,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1566863"},{"id":1566739,"d":"2026-05-18","iss":"Байтерек","tk":"BTRKb32","ccy":"KZT","ten":1.01,"met":"спецторги","fin":17.9,"knd":"купон","spr":0.61,"cov":106.5,"vol":100.0,"prt":10.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1566739"},{"id":1566478,"d":"2026-05-13","iss":"Capital Leasing Group","tk":"CLSGb16","ccy":"KZT","ten":3.0,"met":"спецторги","fin":23.0,"knd":"купон","spr":6.83,"cov":69.8,"vol":0.14,"prt":1.0,"ini":"Standard","url":"https://kase.kz/ru/information/news/show/1566478"},{"id":1566360,"d":"2026-05-12","iss":"TAS Finance Group","tk":"MFTSb7","ccy":"USD","ten":1.0,"met":"подписка","fin":10.0,"knd":"доходность","spr":null,"cov":94.1,"vol":1.901,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1566360"},{"id":1566282,"d":"2026-05-12","iss":"Национальная компания QazaqGaz","tk":"KZTGe2","ccy":"USD","ten":null,"met":"подписка","fin":5.875,"knd":"доходность","spr":null,"cov":null,"vol":38.882,"prt":4.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1566282"},{"id":1566178,"d":"2026-05-08","iss":"Байтерек","tk":"BTRKe6","ccy":"USD","ten":null,"met":"подписка","fin":5.375,"knd":"доходность","spr":null,"cov":null,"vol":8.465,"prt":4.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1566178"},{"id":1565023,"d":"2026-04-23","iss":"R-Finance","tk":"MFRFb27","ccy":"KZT","ten":3.0,"met":"спецторги","fin":23.0,"knd":"купон","spr":6.85,"cov":51.9,"vol":0.154,"prt":2.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1565023"},{"id":1564802,"d":"2026-04-21","iss":"Swiss Capital","tk":"MFSCb9","ccy":"KZT","ten":3.0,"met":"подписка","fin":23.5,"knd":"купон","spr":7.35,"cov":100.0,"vol":3.0,"prt":2.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1564802"},{"id":1564800,"d":"2026-04-21","iss":"Orbis Leasing","tk":"ORBSb8","ccy":"KZT","ten":2.0,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.47,"cov":100.5,"vol":2.0,"prt":2.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1564800"},{"id":1564583,"d":"2026-04-17","iss":"R-Finance","tk":"MFRFb28","ccy":"USD","ten":1.0,"met":"спецторги","fin":11.0,"knd":"купон","spr":null,"cov":115.6,"vol":0.547,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1564583"},{"id":1564448,"d":"2026-04-16","iss":"Capital Leasing Group","tk":"CLSGb11","ccy":"KZT","ten":3.0,"met":"подписка","fin":23.0,"knd":"купон","spr":6.93,"cov":125.0,"vol":4.0,"prt":3.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1564448"},{"id":1564443,"d":"2026-04-16","iss":"Казахстанский фонд устойчивости","tk":"KFUSb88","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.19,"knd":"доходность","spr":-0.9,"cov":177.4,"vol":4.834,"prt":4.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1564443"},{"id":1564344,"d":"2026-04-15","iss":"R-Finance","tk":"MFRFb29","ccy":"USD","ten":0.5,"met":"спецторги","fin":10.0,"knd":"купон","spr":null,"cov":162.5,"vol":0.386,"prt":2.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1564344"},{"id":1564057,"d":"2026-04-10","iss":"Байтерек","tk":"BTRKb31","ccy":"KZT","ten":1.01,"met":"спецторги","fin":17.2,"knd":"купон","spr":0.22,"cov":146.5,"vol":100.0,"prt":11.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1564057"},{"id":1563964,"d":"2026-04-09","iss":"Казахстанский фонд устойчивости","tk":"KFUSb110","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.32,"knd":"доходность","spr":-0.04,"cov":100.0,"vol":2.827,"prt":1.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1563964"},{"id":1563961,"d":"2026-04-09","iss":"Казахстанский фонд устойчивости","tk":"KFUSb104","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.4,"knd":"доходность","spr":-0.58,"cov":104.6,"vol":13.906,"prt":1.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1563961"},{"id":1563577,"d":"2026-04-03","iss":"Байтерек","tk":"BTRKb30","ccy":"KZT","ten":1.08,"met":"спецторги","fin":17.2,"knd":"купон","spr":0.45,"cov":120.3,"vol":100.0,"prt":8.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1563577"},{"id":1563486,"d":"2026-04-02","iss":"Казахстанский фонд устойчивости","tk":"KFUSb108","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.32,"knd":"доходность","spr":0.08,"cov":100.0,"vol":9.389,"prt":1.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1563486"},{"id":1563484,"d":"2026-04-02","iss":"Казахстанский фонд устойчивости","tk":"KFUSb104","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.35,"knd":"доходность","spr":-0.46,"cov":28.3,"vol":5.468,"prt":2.0,"ini":"ForteFinance","url":"https://kase.kz/ru/information/news/show/1563484"},{"id":1563377,"d":"2026-04-01","iss":"Home Credit Bank","tk":"HCBNb27","ccy":"KZT","ten":2.0,"met":"спецторги","fin":19.0,"knd":"купон","spr":2.76,"cov":100.4,"vol":2.5,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1563377"},{"id":1563375,"d":"2026-04-01","iss":"Home Credit Bank","tk":"HCBNb26","ccy":"KZT","ten":2.0,"met":"спецторги","fin":19.0,"knd":"доходность","spr":2.76,"cov":100.1,"vol":2.515,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1563375"},{"id":1563373,"d":"2026-04-01","iss":"Home Credit Bank","tk":"HCBNb25","ccy":"KZT","ten":2.0,"met":"спецторги","fin":19.0,"knd":"доходность","spr":2.76,"cov":100.3,"vol":2.515,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1563373"},{"id":1563241,"d":"2026-03-31","iss":"Казахстанский фонд устойчивости","tk":"KFUSb110","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.19,"knd":"доходность","spr":-0.05,"cov":null,"vol":1.882,"prt":2.0,"ini":"BCC Invest","url":"https://kase.kz/ru/information/news/show/1563241"},{"id":1563239,"d":"2026-03-31","iss":"Казахстанский фонд устойчивости","tk":"KFUSb109","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.19,"knd":"доходность","spr":-0.05,"cov":130.0,"vol":9.409,"prt":2.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1563239"},{"id":1563237,"d":"2026-03-31","iss":"Евразийский банк развития","tk":"EABRb60","ccy":"USD","ten":3.0,"met":"спецторги","fin":5.35,"knd":"купон","spr":null,"cov":121.7,"vol":57.771,"prt":10.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1563237"},{"id":1562753,"d":"2026-03-20","iss":"KMF Банк","tk":"MFKMb9","ccy":"KZT","ten":3.0,"met":"спецторги","fin":21.0,"knd":"купон","spr":5.18,"cov":133.6,"vol":5.0,"prt":9.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1562753"},{"id":1562661,"d":"2026-03-19","iss":"Казахстанский фонд устойчивости","tk":"KFUSb107","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.25,"knd":"доходность","spr":0.15,"cov":137.0,"vol":9.4,"prt":4.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1562661"},{"id":1562659,"d":"2026-03-19","iss":"Казахстанский фонд устойчивости","tk":"KFUSb80","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.2,"knd":"доходность","spr":-0.39,"cov":133.9,"vol":5.899,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1562659"},{"id":1562656,"d":"2026-03-19","iss":"Home Credit Bank","tk":"HCBNb25","ccy":"KZT","ten":2.0,"met":"спецторги","fin":19.0,"knd":"купон","spr":2.9,"cov":null,"vol":5.5,"prt":2.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1562656"},{"id":1562650,"d":"2026-03-19","iss":"Home Credit Bank","tk":"HCBNb32","ccy":"KZT","ten":5.0,"met":"спецторги","fin":18.0,"knd":"купон","spr":2.54,"cov":100.0,"vol":2.5,"prt":1.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1562650"},{"id":1562648,"d":"2026-03-19","iss":"Home Credit Bank","tk":"HCBNb31","ccy":"KZT","ten":5.0,"met":"спецторги","fin":18.0,"knd":"купон","spr":2.54,"cov":100.0,"vol":2.5,"prt":1.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1562648"},{"id":1562646,"d":"2026-03-19","iss":"Home Credit Bank","tk":"HCBNb26","ccy":"KZT","ten":2.0,"met":"спецторги","fin":19.0,"knd":"купон","spr":2.9,"cov":100.0,"vol":2.5,"prt":1.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1562646"},{"id":1562486,"d":"2026-03-17","iss":"Евразийский банк развития","tk":"EABRb59","ccy":"KZT","ten":0.25,"met":"спецторги","fin":17.15,"knd":"доходность","spr":0.07,"cov":156.4,"vol":44.996,"prt":7.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1562486"},{"id":1562383,"d":"2026-03-16","iss":"Лизинг Групп","tk":"LZGRb12","ccy":"KZT","ten":0.5,"met":"спецторги","fin":22.0,"knd":"купон","spr":4.92,"cov":100.0,"vol":0.02,"prt":1.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1562383"},{"id":1562307,"d":"2026-03-13","iss":"Казахстанский фонд устойчивости","tk":"KFUSb81","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.4,"knd":"доходность","spr":-0.1,"cov":164.9,"vol":4.703,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1562307"},{"id":1562305,"d":"2026-03-13","iss":"Казахстанский фонд устойчивости","tk":"KFUSb80","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.35,"knd":"доходность","spr":-0.15,"cov":40.1,"vol":3.94,"prt":3.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1562305"},{"id":1562224,"d":"2026-03-12","iss":"Отбасы банк","tk":"JSBNb10","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":2.05,"cov":29.7,"vol":50.0,"prt":7.0,"ini":"Отбасы банк","url":"https://kase.kz/ru/information/news/show/1562224"},{"id":1562222,"d":"2026-03-12","iss":"Отбасы банк","tk":"JSBNb9","ccy":"KZT","ten":5.0,"met":"спецторги","fin":17.5,"knd":"купон","spr":2.05,"cov":40.0,"vol":50.0,"prt":5.0,"ini":"Отбасы банк","url":"https://kase.kz/ru/information/news/show/1562222"},{"id":1561957,"d":"2026-03-06","iss":"Orbis Leasing","tk":"ORBSb7","ccy":"KZT","ten":1.0,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.61,"cov":100.0,"vol":0.5,"prt":1.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1561957"},{"id":1561888,"d":"2026-03-05","iss":"Home Credit Bank","tk":"HCBNb24","ccy":"KZT","ten":1.0,"met":"спецторги","fin":19.5,"knd":"доходность","spr":3.11,"cov":null,"vol":4.202,"prt":2.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1561888"},{"id":1561886,"d":"2026-03-05","iss":"Казахстанский фонд устойчивости","tk":"KFUSb81","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.25,"knd":"доходность","spr":-0.14,"cov":108.0,"vol":14.661,"prt":4.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1561886"},{"id":1561885,"d":"2026-03-05","iss":"Байтерек","tk":"BTRKb29","ccy":"KZT","ten":1.01,"met":"спецторги","fin":17.0,"knd":"купон","spr":0.61,"cov":181.7,"vol":50.0,"prt":16.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1561885"},{"id":1561804,"d":"2026-03-04","iss":"Home Credit Bank","tk":"HCBNb24","ccy":"KZT","ten":1.0,"met":"спецторги","fin":19.5,"knd":"купон","spr":3.11,"cov":113.6,"vol":25.0,"prt":4.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1561804"},{"id":1561670,"d":"2026-03-03","iss":"Банк ЦентрКредит","tk":"CCBNb38","ccy":"USD","ten":1.0,"met":"подписка","fin":4.25,"knd":"доходность","spr":null,"cov":8.0,"vol":0.695,"prt":1.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1561670"},{"id":1561669,"d":"2026-03-03","iss":"Эксперт Лизинг","tk":"EXLSb1","ccy":"KZT","ten":2.0,"met":"спецторги","fin":22.0,"knd":"купон","spr":6.02,"cov":38.9,"vol":0.195,"prt":1.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1561669"},{"id":1561370,"d":"2026-02-26","iss":"Казахстанский фонд устойчивости","tk":"KFUSb106","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.24,"knd":"доходность","spr":0.37,"cov":188.0,"vol":4.16,"prt":4.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1561370"},{"id":1561286,"d":"2026-02-25","iss":"BI Development Ltd.","tk":"BIGDb12","ccy":"USD","ten":2.0,"met":"спецторги","fin":7.5,"knd":"доходность","spr":null,"cov":null,"vol":1.857,"prt":4.0,"ini":"Teniz Capital","url":"https://kase.kz/ru/information/news/show/1561286"},{"id":1561215,"d":"2026-02-24","iss":"BI Development Ltd.","tk":"BIGDb12","ccy":"USD","ten":2.0,"met":"спецторги","fin":7.5,"knd":"купон","spr":null,"cov":159.3,"vol":0.757,"prt":6.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1561215"},{"id":1561213,"d":"2026-02-24","iss":"BI Development Ltd.","tk":"BIGDb10","ccy":"USD","ten":3.0,"met":"спецторги","fin":7.75,"knd":"купон","spr":null,"cov":163.3,"vol":2.323,"prt":6.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1561213"},{"id":1560976,"d":"2026-02-19","iss":"Евразийский банк развития","tk":"EABRb58","ccy":"KZT","ten":0.25,"met":"спецторги","fin":17.24,"knd":"доходность","spr":0.58,"cov":179.9,"vol":47.96,"prt":6.0,"ini":"Евразийский банк развития","url":"https://kase.kz/ru/information/news/show/1560976"},{"id":1560921,"d":"2026-02-18","iss":"MOST","tk":"MFSTb1","ccy":"KZT","ten":1.0,"met":"спецторги","fin":24.5,"knd":"купон","spr":8.2,"cov":29.6,"vol":0.74,"prt":5.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1560921"},{"id":1560914,"d":"2026-02-18","iss":"Garanti Leasing","tk":"GLLKb1","ccy":"KZT","ten":1.0,"met":"подписка","fin":24.0,"knd":"доходность","spr":7.7,"cov":41.9,"vol":0.05,"prt":3.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1560914"},{"id":1560657,"d":"2026-02-12","iss":"Сейф-Ломбард","tk":"MFSLb12","ccy":"KZT","ten":2.0,"met":"спецторги","fin":21.5,"knd":"доходность","spr":5.56,"cov":100.0,"vol":1.511,"prt":1.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1560657"},{"id":1560653,"d":"2026-02-12","iss":"Казахстанский фонд устойчивости","tk":"KFUSb106","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.35,"knd":"доходность","spr":0.41,"cov":null,"vol":4.69,"prt":8.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1560653"},{"id":1560568,"d":"2026-02-11","iss":"R-Finance","tk":"MFRFb26","ccy":"KZT","ten":3.0,"met":"спецторги","fin":23.0,"knd":"купон","spr":7.27,"cov":null,"vol":0.5,"prt":4.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1560568"},{"id":1560343,"d":"2026-02-06","iss":"Capital Leasing Group","tk":"CLSGb15","ccy":"KZT","ten":3.0,"met":"спецторги","fin":23.0,"knd":"купон","spr":7.26,"cov":11.1,"vol":0.056,"prt":2.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1560343"},{"id":1560260,"d":"2026-02-05","iss":"Казахстанский фонд устойчивости","tk":"KFUSb80","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.7,"knd":"доходность","spr":0.4,"cov":null,"vol":9.638,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1560260"},{"id":1560255,"d":"2026-02-05","iss":"КазАгроФинанс","tk":"KAFIb19","ccy":"KZT","ten":3.0,"met":"спецторги","fin":18.4,"knd":"купон","spr":2.66,"cov":118.1,"vol":50.0,"prt":6.0,"ini":"Сентрас Секьюритиз","url":"https://kase.kz/ru/information/news/show/1560255"},{"id":1560183,"d":"2026-02-04","iss":"Home Credit Bank","tk":"HCBNb22","ccy":"KZT","ten":1.0,"met":"спецторги","fin":19.5,"knd":"купон","spr":3.2,"cov":100.0,"vol":10.0,"prt":3.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1560183"},{"id":1560068,"d":"2026-02-03","iss":"BI Development Ltd.","tk":"BIGDb4","ccy":"USD","ten":2.0,"met":"подписка","fin":7.5,"knd":"купон","spr":null,"cov":68.9,"vol":4.907,"prt":3.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1560068"},{"id":1560067,"d":"2026-02-03","iss":"BI Development Ltd.","tk":"BIGDb3","ccy":"USD","ten":3.0,"met":"подписка","fin":7.75,"knd":"купон","spr":null,"cov":124.1,"vol":9.502,"prt":6.0,"ini":"Halyk Finance","url":"https://kase.kz/ru/information/news/show/1560067"},{"id":1559819,"d":"2026-01-30","iss":"Capital Leasing Group","tk":"CLSGb10","ccy":"KZT","ten":3.0,"met":"подписка","fin":23.0,"knd":"купон","spr":7.25,"cov":100.0,"vol":5.0,"prt":2.0,"ini":null,"url":"https://kase.kz/ru/information/news/show/1559819"},{"id":1559817,"d":"2026-01-30","iss":"Home Credit Bank","tk":"HCBNb21","ccy":"KZT","ten":1.0,"met":"спецторги","fin":19.5,"knd":"купон","spr":3.2,"cov":128.0,"vol":10.0,"prt":3.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1559817"},{"id":1559498,"d":"2026-01-27","iss":"Лизинг Групп","tk":"LZGRb15","ccy":"USD","ten":1.0,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":103.3,"vol":0.029,"prt":1.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1559498"},{"id":1559264,"d":"2026-01-23","iss":"Лизинг Групп","tk":"LZGRb14","ccy":"USD","ten":0.25,"met":"спецторги","fin":10.5,"knd":"купон","spr":null,"cov":null,"vol":0.143,"prt":1.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1559264"},{"id":1559134,"d":"2026-01-22","iss":"Казахстанский фонд устойчивости","tk":"KFUSb75","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.7,"knd":"доходность","spr":0.39,"cov":184.3,"vol":14.489,"prt":6.0,"ini":"Евразийский Капитал","url":"https://kase.kz/ru/information/news/show/1559134"},{"id":1558971,"d":"2026-01-20","iss":"Лизинг Групп","tk":"LZGRb13","ccy":"KZT","ten":0.25,"met":"спецторги","fin":22.0,"knd":"купон","spr":5.34,"cov":null,"vol":0.202,"prt":2.0,"ini":"Tengri Partners","url":"https://kase.kz/ru/information/news/show/1558971"},{"id":1558887,"d":"2026-01-19","iss":"Garanti Leasing","tk":"GLLKb1","ccy":"KZT","ten":1.0,"met":"подписка","fin":24.0,"knd":"доходность","spr":7.69,"cov":58.2,"vol":0.184,"prt":1.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1558887"},{"id":1558721,"d":"2026-01-15","iss":"Казахстанский фонд устойчивости","tk":"KFUSb75","ccy":"KZT","ten":1.0,"met":"спецторги","fin":16.85,"knd":"доходность","spr":0.55,"cov":100.0,"vol":14.439,"prt":8.0,"ini":"Alatau City Invest","url":"https://kase.kz/ru/information/news/show/1558721"},{"id":1558430,"d":"2026-01-09","iss":"Казахстанский фонд устойчивости","tk":"KFUSb114","ccy":"KZT","ten":2.0,"met":"спецторги","fin":16.82,"knd":"доходность","spr":0.84,"cov":null,"vol":13.95,"prt":7.0,"ini":"Фридом Финанс","url":"https://kase.kz/ru/information/news/show/1558430"}],"texts":{"eyebrow":"Карта рынка · 2026","title_vol":"65% денег рынка привлекли квазигосударственные компании","sub_vol":"МФО, лизинг и корпорации привлекли 4,6% денег, но провели 65 из 187 размещений. Переключите размер на «Размещения», чтобы их увидеть.","title_cnt":"МФО, лизинг и корпорации провели 65 из 187 размещений","sub_cnt":"Чаще всех на рынок выходили КФУ (34 размещения), Home Credit (15), BI Development и Лизинг Групп (по 12).","cap_demand":"Цвет — медиана спроса к предложению по размещениям эмитента. Чаще всего спрос не покрывал предложение у лизинговых компаний: в 8 из 19 размещений; у квазигосударственных — в 8 из 66.","cap_price":"Цвет — медианный спред эмитента к ГЦБ того же срока относительно медианы его типа. Внутри одного типа разница большая: у МФО — от +1,80 п. п. у Шинхан Финанс до +8,20 у MOST. Это не всегда переплата: спред зависит от срока и риска эмитента.","how_to_read":"Одна плитка — один эмитент. Наведите курсор или нажмите на плитку, чтобы увидеть сделки.","lg_demand":"Спрос к предложению · медиана по размещениям эмитента","lg_price":"Спред к ГЦБ против медианы своего типа, п. п.","size_vol":"Площадь — привлечённый объём","size_n":"Площадь — число размещений","note":"Размещения на KASE с 09.01 по 19.10.2026: 187 сообщений KASE об итогах. Выпуски в долларах и рублях пересчитаны в тенге (USD — по 475,09 ₸). Спред — ставка размещения минус доходность ГЦБ того же срока; есть только у выпусков в тенге с фиксированной ставкой. Источник каждой сделки — ссылка «KASE ↗»."}};
+(function(){
+'use strict';
+const NB = ' ', MINUS = '−';
+const S = { size: 'vol', color: 'demand', table: false, sortK: 'vol_bn', sortDir: -1 };
+const SEG = Object.fromEntries(DATA.segments.map(s => [s.code, s]));
+const DEAL = Object.fromEntries(DATA.deals.map(d => [d.id, d]));
+const ISS = Object.fromEntries(DATA.issuers.map(z => [z.name, z]));
+const T = DATA.texts;
+const HEADER = 22, HEADER_S = 16, MIN_SIDE = 16;
+/* высота заголовка группы: полный, компактный (только название) или нет */
+function headerOf(w, h) { if (w >= 96 && h >= 64) return HEADER; if (w >= 56 && h >= 40) return HEADER_S; return 0; }
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = (x, n = 1) => x.toLocaleString('ru-RU', { minimumFractionDigits: n, maximumFractionDigits: n });
+const sgn = (x, n = 2) => (x < 0 ? MINUS : '+') + fmt(Math.abs(x), n);
+function plural(n, a, b, c) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return a; if (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) return b; return c; }
+const razm = n => n + NB + plural(n, 'размещение', 'размещения', 'размещений');
+const emit = n => n + NB + plural(n, 'эмитент', 'эмитента', 'эмитентов');
+function money(bn) {
+  if (bn >= 1000) return fmt(bn / 1000, 2) + NB + 'трлн' + NB + '₸';
+  if (bn >= 1) return fmt(bn, 1) + NB + 'млрд' + NB + '₸';
+  return fmt(bn * 1000, 0) + NB + 'млн' + NB + '₸';
+}
+function years(t) {
+  if (t == null) return '—';
+  if (t < 1) return Math.round(t * 12) + NB + 'мес.';
+  if (Math.abs(t - Math.round(t)) < 1e-9) { const n = Math.round(t); return n + NB + plural(n, 'год', 'года', 'лет'); }
+  return fmt(t, 2).replace(/0$/, '') + NB + 'года';
+}
+const dru = d => d.slice(8, 10) + '.' + d.slice(5, 7) + '.' + d.slice(0, 4);
+function quantile(v, p) { v = v.slice().sort((a, b) => a - b); if (!v.length) return null; const h = (v.length - 1) * p, lo = Math.floor(h), hi = Math.ceil(h); return v[lo] + (v[hi] - v[lo]) * (h - lo); }
+function binOf(mode, x) {
+  if (x == null) return 'na';
+  for (const b of DATA.bins[mode]) { const lo = b.from == null ? -Infinity : b.from, hi = b.to == null ? Infinity : b.to; if (x >= lo && x < hi) return b.key; }
+  return 'na';
+}
+const binLabel = (mode, k) => k === 'na' ? 'нет данных' : DATA.bins[mode].find(b => b.key === k).label;
+
+/* метрика плитки: эмитент или «ещё N» */
+function metricOf(item) {
+  if (item.kind === 'iss') {
+    const z = item.z;
+    return S.color === 'demand' ? { v: z.cov_med, bin: z.bin_demand } : { v: z.spr_delta, bin: z.bin_price };
+  }
+  const ds = item.items.flatMap(z => z.deal_ids.map(id => DEAL[id]));
+  if (S.color === 'demand') { const v = quantile(ds.filter(d => d.cov != null).map(d => d.cov), .5); return { v, bin: binOf('demand', v) }; }
+  const v = quantile(ds.filter(d => d.spr != null).map(d => d.spr - SEG[item.seg].spr_p50), .5);
+  return { v, bin: binOf('price', v) };
+}
+function metricText(m, long) {
+  if (S.color === 'demand') return m.v == null ? 'спрос: нет данных' : 'спрос' + NB + fmt(m.v, 0) + '%';
+  if (m.v == null) return 'спред: нет данных';
+  return sgn(m.v) + NB + 'п.' + NB + 'п.' + (long ? ' к' + NB + 'типу' : '');
+}
+
+/* раскладка: d3-hierarchy, squarify; группа = тип эмитента */
+function layout(W, H) {
+  const val = z => S.size === 'vol' ? z.vol_bn : z.n;
+  const groups = DATA.segments.map(s => ({ kind: 'seg', seg: s, children: DATA.issuers.filter(z => z.seg === s.code).map(z => ({ kind: 'iss', z, v: val(z) })) }));
+  const fits = n => headerOf(n.x1 - n.x0, n.y1 - n.y0);
+  const run = () => d3.treemap().size([W, H]).tile(d3.treemapSquarify.ratio(1)).round(true)
+    .paddingInner(n => n.depth === 0 ? 8 : 2)
+    .paddingTop(n => n.depth === 1 ? fits(n) : 0)
+    (d3.hierarchy({ kind: 'root', children: groups }).sum(d => d.v || 0)
+      .sort((a, b) => ((a.data.kind === 'more') - (b.data.kind === 'more')) || (b.value - a.value)));
+  let root = run(), again = false;
+  for (const g of root.children) {
+    const tiny = g.children.filter(l => l.data.kind === 'iss' && Math.min(l.x1 - l.x0, l.y1 - l.y0) < MIN_SIDE);
+    if (tiny.length >= 2) {
+      const grp = g.data, names = new Set(tiny.map(l => l.data.z.name));
+      const items = grp.children.filter(c => names.has(c.z.name));
+      grp.children = grp.children.filter(c => !names.has(c.z.name));
+      grp.children.push({ kind: 'more', seg: grp.seg.code, items: items.map(c => c.z), v: items.reduce((s, c) => s + c.v, 0) });
+      again = true;
+    }
+  }
+  if (again) root = run();
+  return root;
+}
+/* ширина текста — чтобы не обрезать числа: строка либо помещается целиком, либо не показывается */
+const ctx2d = document.createElement('canvas').getContext('2d');
+function tw(str, font) { ctx2d.font = font; return ctx2d.measureText(str.replace(/ /g, ' ')).width; }
+const FONTS = {
+  xl: { pad: 14, name: '600 18px Onest', q: '500 22px Unbounded', u: '500 14px Onest', v: '500 13px Onest', m: '400 13px Onest' },
+  l: { pad: 10, name: '600 15px Onest', v: '500 13px Onest', m: '400 12px Onest' },
+  m: { pad: 8, name: '600 13px Onest', v: '400 12px Onest', m: '400 12px Onest' },
+  s: { pad: 6, name: '600 12px Onest' },
+};
+function splitVal(str) { const i = str.indexOf(NB); return i < 0 ? [str, ''] : [str.slice(0, i), str.slice(i)]; }
+function tileHtml(z, w, h, name, val, met) {
+  if (z === 'xs') return '';
+  const f = FONTS[z], aw = w - 2 * f.pad;
+  // запас 6% + 2 px: в CSS цифры моноширинные (tabular-nums), canvas меряет пропорциональные
+  const fits = (width) => width * 1.06 + 2 <= aw;
+  let html = '<span class="t-n">' + esc(name) + '</span>';
+  if (z === 's') return html;
+  if (z === 'xl') {
+    const [q, u] = splitVal(val);
+    if (fits(tw(q, f.q) + tw(u, f.u))) html += '<span class="t-v"><span class="q">' + q + '</span><span class="u">' + u + '</span></span>';
+    else if (fits(tw(val, f.v))) html += '<span class="t-v" style="font-size:13px;font-weight:500">' + val + '</span>';
+    if (fits(tw(met, f.m))) html += '<span class="t-m">' + met + '</span>';
+    return html;
+  }
+  if (z === 'l') {
+    if (fits(tw(val, f.v))) html += '<span class="t-v">' + val + '</span>';
+    if (fits(tw(met, f.m))) html += '<span class="t-m">' + met + '</span>';
+    return html;
+  }
+  const first = S.size === 'vol' ? val : met, second = S.size === 'vol' ? met : val;
+  if (fits(tw(first, f.v))) html += '<span class="t-v">' + first + '</span>';
+  if (h >= 62 && fits(tw(second, f.m))) html += '<span class="t-m">' + second + '</span>';
+  return html;
+}
+function zone(w, h) {
+  if (w >= 220 && h >= 130) return 'xl';
+  if (w >= 130 && h >= 80) return 'l';
+  if (w >= 84 && h >= 46) return 'm';
+  if (w >= 54 && h >= 26) return 's';
+  return 'xs';
+}
+
+const map = $('#map'), tip = $('#tip');
+const els = new Map();
+let leaves = [];
+function render(anim) {
+  const W = Math.round(map.clientWidth);
+  const H = W >= 900 ? 620 : W >= 600 ? 560 : Math.max(520, Math.min(680, Math.round(W * 1.6)));
+  map.style.height = H + 'px';
+  if (anim) { map.classList.add('moving'); clearTimeout(render.t); render.t = setTimeout(() => map.classList.remove('moving'), 470); }
+  const root = layout(W, H);
+  const seen = new Set(), headed = {};
+  // заголовки групп
+  for (const g of root.children) {
+    const hh = headerOf(g.x1 - g.x0, g.y1 - g.y0); headed[g.data.seg.code] = hh > 0;
+    const key = 'g:' + g.data.seg.code; seen.add(key);
+    let el = els.get(key);
+    if (!el) { el = document.createElement('button'); el.type = 'button'; el.className = 'gh'; el.dataset.seg = g.data.seg.code; map.appendChild(el); els.set(key, el); }
+    const s = g.data.seg, w = g.x1 - g.x0, show = hh > 0;
+    el.classList.toggle('gh-s', hh === HEADER_S);
+    el.style.left = g.x0 + 'px'; el.style.top = g.y0 + 'px'; el.style.width = w + 'px';
+    el.style.opacity = show ? 1 : 0; el.tabIndex = show ? 0 : -1; el.style.pointerEvents = show ? 'auto' : 'none';
+    const gv = S.size === 'vol' ? money(s.vol_bn) : razm(s.n), GF = '500 11px "JetBrains Mono"';
+    const room = w - 4, wName = tw(s.short.toUpperCase(), GF) + s.short.length * 1.1, wVal = tw(gv.toUpperCase(), GF) + gv.length * 1.1 + 8;
+    el.innerHTML = '<b>' + esc(s.short) + '</b>' + (wName + wVal <= room ? '<span>' + gv + '</span>' : '');
+    el.setAttribute('aria-label', s.name + ': ' + money(s.vol_bn) + ', ' + razm(s.n) + ', ' + emit(s.issuers) + '. Открыть список');
+  }
+  leaves = root.leaves();
+  for (const l of leaves) {
+    const it = l.data, key = it.kind === 'iss' ? 'i:' + it.z.name : 'm:' + it.seg; seen.add(key);
+    let el = els.get(key);
+    if (!el) {
+      el = document.createElement('button'); el.type = 'button'; el.className = 'tile';
+      insertTile(el, it.kind === 'iss' ? it.z.seg : it.seg); els.set(key, el);
+      el.style.opacity = 0; requestAnimationFrame(() => el.style.opacity = 1);
+    }
+    el._item = it;
+    const w = l.x1 - l.x0, h = l.y1 - l.y0, z = zone(w, h), m = metricOf(it);
+    el.className = 'tile z-' + z + ' b-' + m.bin + (it.kind === 'more' ? ' more' : '') + (selKey === key ? ' is-sel' : '');
+    el.dataset.bin = m.bin; el.dataset.seg = it.kind === 'iss' ? it.z.seg : it.seg;
+    Object.assign(el.style, { left: l.x0 + 'px', top: l.y0 + 'px', width: w + 'px', height: h + 'px' });
+    // «ещё N»: если в плитку ушёл весь тип — пишем тип; если у группы нет заголовка — добавляем тип
+    let name;
+    if (it.kind === 'iss') name = it.z.label;
+    else if (it.items.length === SEG[it.seg].issuers) name = SEG[it.seg].short + ' · ' + emit(it.items.length);
+    else name = (headed[it.seg] ? '' : SEG[it.seg].short + ': ') + 'ещё' + NB + it.items.length;
+    const val = it.kind === 'iss' ? (S.size === 'vol' ? money(it.z.vol_bn) : razm(it.z.n))
+      : (S.size === 'vol' ? money(it.items.reduce((s, x) => s + x.vol_bn, 0)) : razm(it.items.reduce((s, x) => s + x.n, 0)));
+    el.innerHTML = tileHtml(z, w, h, name, val, metricText(m, z === 'xl'));
+    const segName = SEG[it.kind === 'iss' ? it.z.seg : it.seg].name;
+    el.setAttribute('aria-label', (it.kind === 'iss' ? it.z.name : 'Ещё ' + it.items.length + ' эмитентов') + ', ' + segName + ': ' + val + ', ' + metricText(m, true));
+  }
+  for (const [k, el] of els) if (!seen.has(k)) { el.remove(); els.delete(k); }
+}
+/* Новую плитку ставим в DOM сразу за плитками своей группы (порядок Tab: заголовок группы, её плитки).
+   Уже существующие элементы не переставляем: перенос узла в DOM сбрасывает CSS-переход. */
+function insertTile(el, seg) {
+  const h = els.get('g:' + seg);
+  let n = h ? h.nextElementSibling : null;
+  while (n && !n.classList.contains('gh')) n = n.nextElementSibling;
+  map.insertBefore(el, n);
+}
+
+/* тексты и легенда */
+function texts() {
+  $('#t-eyebrow').textContent = T.eyebrow;
+  $('#t-title').textContent = S.size === 'vol' ? T.title_vol : T.title_cnt;
+  $('#t-sub').textContent = S.size === 'vol' ? T.sub_vol : T.sub_cnt;
+  $('#t-cap').textContent = S.color === 'demand' ? T.cap_demand : T.cap_price;
+  $('#lg-title').textContent = S.color === 'demand' ? T.lg_demand : T.lg_price;
+  $('#size-note').textContent = S.size === 'vol' ? T.size_vol : T.size_n;
+  $('#t-how').textContent = T.how_to_read;
+  $('#t-note').textContent = T.note;
+  const poles = S.color === 'demand' ? ['← недобор', 'переподписка →'] : ['← дешевле типа', 'дороже типа →'];
+  $('#lg-scale').innerHTML = DATA.bins[S.color].map(b => '<button type="button" class="sw" data-bin="' + b.key + '"><i class="b-' + b.key + '"></i><span>' + esc(b.label) + '</span></button>').join('') +
+    '<div class="lg-poles" aria-hidden="true"><span>' + poles[0] + '</span><span>' + poles[1] + '</span></div>';
+  $('#segrow').innerHTML = '<span>Типы эмитентов:</span>' + DATA.segments.map(s => '<button type="button" data-seg="' + s.code + '">' + esc(s.short) + ' · ' + (S.size === 'vol' ? money(s.vol_bn) : razm(s.n)) + '</button>').join('');
+  document.querySelectorAll('[data-size]').forEach(b => b.setAttribute('aria-pressed', b.dataset.size === S.size));
+  document.querySelectorAll('[data-color]').forEach(b => b.setAttribute('aria-pressed', b.dataset.color === S.color));
+}
+
+/* подсказка */
+function tipHtml(it) {
+  if (it.kind === 'more') {
+    const rows = it.items.map(z => '<li><span>' + esc(z.label) + '</span><span>' + (S.size === 'vol' ? money(z.vol_bn) : razm(z.n)) + '</span></li>').join('');
+    return '<h4>Ещё ' + emit(it.items.length) + '</h4><p class="k">' + esc(SEG[it.seg].name) + '</p><ul>' + rows + '</ul><p class="f">Нажмите — список с данными по каждому</p>';
+  }
+  const z = it.z, on = k => S.color === k ? ' class="on"' : '';
+  const dem = z.with_cov ? 'медиана ' + fmt(z.cov_med, 1) + '%<br>недобор в ' + z.under + ' из ' + z.with_cov : esc(z.cov_na);
+  const spr = z.spr_n ? sgn(z.spr_med) + NB + 'п.' + NB + 'п., у типа ' + sgn(z.seg_p50) + '<br>' + deltaText(z.spr_delta) : 'нет: ' + esc(z.spr_na);
+  return '<h4>' + esc(z.name) + '</h4><p class="k">' + esc(SEG[z.seg].name) + '</p><dl>' +
+    '<div><dt>Привлечено</dt><dd>' + money(z.vol_bn) + '</dd></div>' +
+    '<div><dt>Размещений</dt><dd>' + z.n + ', последнее ' + dru(z.last) + '</dd></div>' +
+    '<div' + on('demand') + '><dt>Спрос</dt><dd>' + dem + '</dd></div>' +
+    '<div' + on('price') + '><dt>Спред к ГЦБ</dt><dd>' + spr + '</dd></div>' +
+    '<div><dt>Срок</dt><dd>' + (z.ten_med == null ? '—' : 'обычно ' + years(z.ten_med)) + '</dd></div>' +
+    '</dl><p class="f">Нажмите — сделки и ссылки на KASE</p>';
+}
+function deltaText(d) {
+  if (Math.abs(d) < 0.25) return 'почти как у типа';
+  return (d > 0 ? 'дороже типа на ' : 'дешевле типа на ') + fmt(Math.abs(d), 2) + NB + 'п.' + NB + 'п.';
+}
+function placeTip(x, y) {
+  const r = tip.getBoundingClientRect(), pad = 12, vw = innerWidth, vh = innerHeight;
+  let left = x + 16, top = y + 16;
+  if (left + r.width > vw - pad) left = x - r.width - 16;
+  if (left < pad) left = pad;
+  if (top + r.height > vh - pad) top = y - r.height - 16;
+  if (top < pad) top = pad;
+  tip.style.left = left + 'px'; tip.style.top = top + 'px';
+}
+let tipFor = null;
+map.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  const el = e.target.closest('.tile');
+  if (!el) { tip.hidden = true; tipFor = null; return; }
+  if (tipFor !== el) { tip.innerHTML = tipHtml(el._item); tip.hidden = false; tipFor = el; }
+  placeTip(e.clientX, e.clientY);
+});
+map.addEventListener('pointerleave', () => { tip.hidden = true; tipFor = null; });
+map.addEventListener('focusin', e => {
+  const el = e.target.closest('.tile'); if (!el) return;
+  tip.innerHTML = tipHtml(el._item); tip.hidden = false; tipFor = el;
+  const r = el.getBoundingClientRect(); placeTip(r.left + Math.min(r.width, 160) - 16, r.top + Math.min(r.height, 80) - 16);
+});
+map.addEventListener('focusout', () => { tip.hidden = true; tipFor = null; });
+
+/* панель */
+const drawer = $('#drawer'), scrim = $('#scrim');
+let lastFocus = null, selKey = null;
+function dealRow(d) {
+  const rate = d.fin == null ? '—' : (d.knd === 'маржа' ? 'маржа ' + fmt(d.fin, 2) : fmt(d.fin, 2) + '%');
+  const tk = esc(d.tk) + (d.ccy !== 'KZT' ? ' · ' + d.ccy : '');
+  const sum = [years(d.ten), rate, d.spr == null ? null : 'спред ' + sgn(d.spr), d.cov == null ? null : 'спрос ' + fmt(d.cov, 1) + '%', money(d.vol)].filter(Boolean).join(' · ');
+  return '<tr><td class="mono">' + dru(d.d) + '</td><td class="mono">' + tk + '</td><td class="num">' + years(d.ten) +
+    '</td><td class="num">' + rate + '</td><td class="num">' + (d.spr == null ? '—' : sgn(d.spr)) + '</td><td class="num">' + (d.cov == null ? '—' : fmt(d.cov, 1) + '%') +
+    '</td><td class="num">' + money(d.vol) + '</td><td class="c-src"><a href="' + d.url + '" target="_blank" rel="noopener" aria-label="Сообщение KASE об итогах размещения ' + esc(d.tk) + ' от ' + dru(d.d) + '">KASE&nbsp;↗</a></td>' +
+    '<td class="c-sum"><span class="mono">' + dru(d.d) + ' · ' + tk + '</span><br>' + sum + '</td></tr>';
+}
+function openIssuer(name) {
+  const z = ISS[name]; selKey = 'i:' + name;
+  const deals = z.deal_ids.map(id => DEAL[id]);
+  drawer.innerHTML = '<div class="dr-h"><div><p class="eyebrow">' + esc(SEG[z.seg].name) + '</p><h2 id="dr-title">' + esc(z.name) + '</h2></div><button type="button" class="dr-x" aria-label="Закрыть">×</button></div>' +
+    '<div class="kpis">' +
+    '<div><span>Привлечено</span><b class="big">' + money(z.vol_bn) + '</b></div>' +
+    '<div><span>Размещений</span><b class="big">' + z.n + '</b></div>' +
+    '<div><span>Последнее</span><b>' + dru(z.last) + '</b></div>' +
+    '<div><span>Медиана спроса</span><b>' + (z.cov_med == null ? '—' : fmt(z.cov_med, 1) + '%') + '</b></div>' +
+    '<div><span>С недобором</span><b>' + (z.with_cov ? z.under + ' из ' + z.with_cov : '—') + '</b></div>' +
+    '<div><span>Медианный спред</span><b>' + (z.spr_med == null ? '—' : sgn(z.spr_med) + NB + 'п.' + NB + 'п.') + '</b></div>' +
+    '</div>' +
+    (z.spr_n ? '<p class="dr-note">У типа «' + esc(SEG[z.seg].short) + '» медианный спред ' + sgn(z.seg_p50) + NB + 'п.' + NB + 'п.: этот эмитент ' + (Math.abs(z.spr_delta) < 0.25 ? 'размещается почти как тип' : (z.spr_delta > 0 ? 'платит на ' + fmt(z.spr_delta, 2) + NB + 'п.' + NB + 'п. больше' : 'платит на ' + fmt(-z.spr_delta, 2) + NB + 'п.' + NB + 'п. меньше')) + '.</p>' : '<p class="dr-note">Спреда нет: ' + esc(z.spr_na) + '.</p>') +
+    '<div class="dr-act">' + (z.in_guide ? '<a class="btn" href="#guide" data-guide="' + esc(z.name) + '">Рассчитать ориентир купона →</a>' : '<span class="dr-note" style="margin:0">Ориентир считается по выпускам в тенге с фиксированной ставкой — у этого эмитента их нет.</span>') + '</div>' +
+    '<h3>Размещения · ' + z.n + '</h3><div class="dt-wrap"><table class="dt"><thead><tr><th>Дата</th><th>Выпуск</th><th class="num">Срок</th><th class="num">Ставка</th><th class="num">Спред</th><th class="num">Спрос</th><th class="num">Объём</th><th>Источник</th></tr></thead><tbody>' +
+    deals.map(dealRow).join('') + '</tbody></table></div>';
+  show();
+}
+function openList(title, eyebrow, list, kpis) {
+  selKey = null;
+  const rows = list.slice().sort((a, b) => b.vol_bn - a.vol_bn).map(z => {
+    const bin = S.color === 'demand' ? z.bin_demand : z.bin_price;
+    return '<li><button type="button" data-open="' + esc(z.name) + '"><i class="b-' + bin + '"></i><b>' + esc(z.name) + '</b><small>' + money(z.vol_bn) + ' · ' + razm(z.n) + '<br>' + esc(binLabel(S.color, bin)) + '</small></button></li>';
+  }).join('');
+  drawer.innerHTML = '<div class="dr-h"><div><p class="eyebrow">' + esc(eyebrow) + '</p><h2 id="dr-title">' + esc(title) + '</h2></div><button type="button" class="dr-x" aria-label="Закрыть">×</button></div>' +
+    (kpis || '') + '<h3>Эмитенты · ' + list.length + '</h3><ul class="iss-list">' + rows + '</ul>';
+  show();
+}
+function openSeg(code) {
+  const s = SEG[code];
+  const k = '<div class="kpis"><div><span>Привлечено</span><b class="big">' + money(s.vol_bn) + '</b></div><div><span>Размещений</span><b class="big">' + s.n + '</b></div><div><span>Доля денег рынка</span><b>' + fmt(s.vol_share, 1) + '%</b></div>' +
+    '<div><span>Медиана спроса</span><b>' + fmt(s.cov_med, 1) + '%</b></div><div><span>С недобором</span><b>' + s.under + ' из ' + s.with_cov + '</b></div><div><span>Медианный спред</span><b>' + sgn(s.spr_p50) + NB + 'п.' + NB + 'п.</b></div></div>';
+  openList(s.name, 'Тип эмитента', DATA.issuers.filter(z => z.seg === code), k);
+}
+function show() {
+  lastFocus = lastFocus || document.activeElement;
+  drawer.hidden = false; scrim.hidden = false; tip.hidden = true;
+  document.querySelectorAll('.tile').forEach(t => t.classList.toggle('is-sel', selKey && els.get(selKey) === t));
+  drawer.querySelector('.dr-x').focus();
+}
+function hide() {
+  drawer.hidden = true; scrim.hidden = true; selKey = null;
+  document.querySelectorAll('.tile.is-sel').forEach(t => t.classList.remove('is-sel'));
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+  lastFocus = null;
+}
+drawer.addEventListener('click', e => {
+  if (e.target.closest('.dr-x')) return hide();
+  const o = e.target.closest('[data-open]'); if (o) return openIssuer(o.dataset.open);
+  const g = e.target.closest('[data-guide]'); if (g) { /* на сайте: перейти на #guide с выбранным эмитентом */ hide(); }
+});
+scrim.addEventListener('click', hide);
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !drawer.hidden) return hide();
+  if (e.key === 'Tab' && !drawer.hidden) {
+    const f = [...drawer.querySelectorAll('a,button')]; if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  }
+});
+map.addEventListener('click', e => {
+  const t = e.target.closest('.tile');
+  if (t) { lastFocus = t; const it = t._item; if (it.kind === 'iss') openIssuer(it.z.name); else openList('Ещё ' + emit(it.items.length), SEG[it.seg].name, it.items); return; }
+  const g = e.target.closest('.gh'); if (g) { lastFocus = g; openSeg(g.dataset.seg); }
+});
+$('#segrow').addEventListener('click', e => { const b = e.target.closest('[data-seg]'); if (b) { lastFocus = b; openSeg(b.dataset.seg); } });
+
+/* подсветка по легенде */
+function hilite(bin) {
+  if (!bin) { map.classList.remove('filtering'); return; }
+  map.classList.add('filtering');
+  map.querySelectorAll('.tile').forEach(t => t.classList.toggle('hit', t.dataset.bin === bin));
+}
+$('#legend').addEventListener('pointerover', e => { const b = e.target.closest('[data-bin]'); hilite(b && b.dataset.bin); });
+$('#legend').addEventListener('pointerleave', () => hilite(null));
+$('#legend').addEventListener('focusin', e => { const b = e.target.closest('[data-bin]'); hilite(b && b.dataset.bin); });
+$('#legend').addEventListener('focusout', () => hilite(null));
+function hiliteSeg(code) {
+  if (!code) { map.classList.remove('filtering'); return; }
+  map.classList.add('filtering');
+  map.querySelectorAll('.tile').forEach(t => t.classList.toggle('hit', t.dataset.seg === code));
+}
+$('#segrow').addEventListener('pointerover', e => { const b = e.target.closest('[data-seg]'); hiliteSeg(b && b.dataset.seg); });
+$('#segrow').addEventListener('pointerleave', () => hiliteSeg(null));
+$('#segrow').addEventListener('focusin', e => { const b = e.target.closest('[data-seg]'); hiliteSeg(b && b.dataset.seg); });
+$('#segrow').addEventListener('focusout', () => hiliteSeg(null));
+
+/* таблица */
+function table() {
+  const k = S.sortK, dir = S.sortDir;
+  const rows = DATA.issuers.slice().sort((a, b) => {
+    const x = k === 'seg' ? SEG[a.seg].short : a[k], y = k === 'seg' ? SEG[b.seg].short : b[k];
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (typeof x === 'string' ? x.localeCompare(y, 'ru') : x - y) * dir;
+  });
+  $('#t tbody').innerHTML = rows.map(z => {
+    const bin = S.color === 'demand' ? z.bin_demand : z.bin_price;
+    return '<tr tabindex="0" data-open="' + esc(z.name) + '"><td><i class="dot b-' + bin + '"></i>' + esc(z.name) + '</td><td>' + esc(SEG[z.seg].short) + '</td><td class="num">' + money(z.vol_bn) + '</td><td class="num">' + z.n +
+      '</td><td class="num">' + (z.cov_med == null ? '—' : fmt(z.cov_med, 1) + '%') + '</td><td class="num">' + (z.with_cov ? z.under + ' из ' + z.with_cov : '—') +
+      '</td><td class="num">' + (z.spr_med == null ? '—' : sgn(z.spr_med)) + '</td><td class="num">' + (z.spr_delta == null ? '—' : sgn(z.spr_delta)) + '</td></tr>';
+  }).join('');
+  document.querySelectorAll('#t th').forEach(th => { if (th.dataset.k === k) th.setAttribute('aria-sort', dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort'); });
+}
+$('#t thead').addEventListener('click', e => {
+  const th = e.target.closest('th'); if (!th) return;
+  if (S.sortK === th.dataset.k) S.sortDir *= -1; else { S.sortK = th.dataset.k; S.sortDir = (th.dataset.k === 'name' || th.dataset.k === 'seg') ? 1 : -1; }
+  table();
+});
+$('#t tbody').addEventListener('click', e => { const r = e.target.closest('[data-open]'); if (r) { lastFocus = r; openIssuer(r.dataset.open); } });
+$('#t tbody').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('[data-open]'); if (r) { lastFocus = r; openIssuer(r.dataset.open); } } });
+$('#b-table').addEventListener('click', () => {
+  S.table = !S.table; $('#tv').hidden = !S.table; $('#b-table').setAttribute('aria-pressed', S.table);
+  $('#b-table').textContent = S.table ? 'Скрыть таблицу' : 'Показать таблицей'; if (S.table) table();
+});
+
+/* переключатели */
+document.querySelector('.controls').addEventListener('click', e => {
+  const b = e.target.closest('[data-size],[data-color]'); if (!b) return;
+  if (b.dataset.size && b.dataset.size !== S.size) { S.size = b.dataset.size; texts(); render(true); if (S.table) table(); }
+  if (b.dataset.color && b.dataset.color !== S.color) { S.color = b.dataset.color; texts(); render(false); if (S.table) table(); }
+});
+
+/* старт: состояние из адреса (?size=n&color=price&theme=dark) — удобно для скриншотов */
+const q = new URLSearchParams(location.search);
+if (q.get('size') === 'n') S.size = 'n';
+if (q.get('color') === 'price') S.color = 'price';
+if (q.get('theme')) document.documentElement.dataset.theme = q.get('theme');
+texts(); render(false);
+if (document.fonts) document.fonts.ready.then(() => render(false)); // ширины подписей зависят от загруженных шрифтов
+requestAnimationFrame(() => requestAnimationFrame(() => map.classList.add('ready')));
+let rz; new ResizeObserver(() => { clearTimeout(rz); rz = setTimeout(() => render(false), 120); }).observe(map);
+if (q.get('table') === '1') $('#b-table').click();
+window.__map = { S, render, openIssuer, openSeg, layout };
+})();
+</script>
+</body>
+</html>
