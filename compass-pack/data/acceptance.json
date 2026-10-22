@@ -1,0 +1,167 @@
+{
+ "curve_now": {
+  "a": 15.7178,
+  "b": -0.7968,
+  "n": 20,
+  "last_auction": "2026-10-20",
+  "y1": 15.72,
+  "y2": 15.17,
+  "y3": 14.84,
+  "y5": 14.44
+ },
+ "curve_may": {
+  "n": 23,
+  "y2": 16.58,
+  "drop_2y": 1.42
+ },
+ "segstat": {
+  "quasi": {
+   "n": 64,
+   "p25": -0.055,
+   "p50": 0.43,
+   "p75": 1.415
+  },
+  "bank": {
+   "n": 28,
+   "p25": 2.532,
+   "p50": 2.9,
+   "p75": 4.48
+  },
+  "corp": {
+   "n": 10,
+   "p25": 3.495,
+   "p50": 4.095,
+   "p75": 5.045
+  },
+  "mfo": {
+   "n": 14,
+   "p25": 5.55,
+   "p50": 6.415,
+   "p75": 6.825
+  },
+  "leas": {
+   "n": 18,
+   "p25": 5.505,
+   "p50": 6.485,
+   "p75": 7.447
+  },
+  "ifi": {
+   "n": 11,
+   "p25": -0.68,
+   "p50": -0.07,
+   "p75": 0.055
+  }
+ },
+ "guide_repeat_BI": {
+  "iss": "BI Development Ltd.",
+  "ten": 2,
+  "gcb": 15.17,
+  "last": "BIGDb11 2026-06-09",
+  "last_fin": 20.0,
+  "last_spr": 3.72,
+  "keep": 18.89,
+  "rep": 20.0,
+  "corridor": "18.9–20.0",
+  "mid": 19.44,
+  "dG": -1.11,
+  "spread_if_repeat": 4.83,
+  "overpay_mln_per_year": 22.3,
+  "n_hist": 5
+ },
+ "guide_repeat_KMF": {
+  "iss": "KMF Банк",
+  "ten": 2,
+  "gcb": 15.17,
+  "last": "MFKMb10 2026-06-15",
+  "last_fin": 21.0,
+  "last_spr": 4.88,
+  "keep": 20.05,
+  "rep": 21.0,
+  "corridor": "20.0–21.0",
+  "mid": 20.52,
+  "dG": -0.95,
+  "spread_if_repeat": 5.83,
+  "overpay_mln_per_year": 57.3,
+  "n_hist": 9
+ },
+ "guide_new_mfo_2y": {
+  "seg": "mfo",
+  "ten": 2,
+  "gcb": 15.17,
+  "lo": 20.72,
+  "mid": 21.58,
+  "hi": 21.99,
+  "corridor": "20.7–22.0"
+ },
+ "guide_new_leas_3y": {
+  "seg": "leas",
+  "ten": 3,
+  "gcb": 14.84,
+  "lo": 20.35,
+  "mid": 21.33,
+  "hi": 22.29,
+  "corridor": "20.3–22.3"
+ },
+ "backtest": {
+  "D_compass": {
+   "n": 110,
+   "mae": 0.7,
+   "within05": 70,
+   "share05": 0.636
+  },
+  "A_gcb_plus_segment": {
+   "n": 110,
+   "mae": 1.12,
+   "within05": 32,
+   "share05": 0.291
+  },
+  "B_segment_median": {
+   "n": 110,
+   "mae": 1.04,
+   "within05": 49,
+   "share05": 0.445
+  },
+  "C_last_coupon_own": {
+   "n": 89,
+   "mae": 0.28,
+   "within05": 73,
+   "share05": 0.82
+  },
+  "D_own": {
+   "n": 89,
+   "mae": 0.32,
+   "within05": 67,
+   "share05": 0.753
+  },
+  "A_new": {
+   "n": 21,
+   "mae": 2.32,
+   "within05": 3,
+   "share05": 0.143
+  }
+ },
+ "sticky": {
+  "all": {
+   "n": 81,
+   "same": 27
+  },
+  "share": 0.333,
+  "private": {
+   "n": 14,
+   "same": 13
+  },
+  "ifi": {
+   "n": 9,
+   "same": 0
+  }
+ },
+ "market": {
+  "deals": 187,
+  "volume_trn": 3.242,
+  "median_cov": 100.9,
+  "under": "34/167",
+  "under_share": 0.204,
+  "same_rate": "104/170",
+  "same_share": 0.612
+ }
+}
